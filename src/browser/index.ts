@@ -1,3 +1,3 @@
-import { MetricalAnalytics } from '../client';
+import { Metrical } from '../client';
 
-(window as any).MetricalAnalytics = MetricalAnalytics;
+(window as any).Metrical = Metrical;

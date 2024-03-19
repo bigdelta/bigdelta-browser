@@ -1,9 +1,9 @@
-import { MetricalAnalytics } from '../src';
+import { Metrical } from '../src';
 import * as uuid from 'uuid';
 
 jest.mock('uuid');
 
-describe('MetricalAnalytics', () => {
+describe('Metrical', () => {
   describe('track', () => {
     const anonymousId = 'f3f7e6b2-0074-457b-9197-6eae16aedf13';
 
@@ -14,7 +14,7 @@ describe('MetricalAnalytics', () => {
     });
 
     it('should perform http request', async () => {
-      const client = new MetricalAnalytics({ writeKey: 'key' });
+      const client = new Metrical({ writeKey: 'key' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -36,7 +36,7 @@ describe('MetricalAnalytics', () => {
     });
 
     it('should respect configuration parameters', async () => {
-      const client = new MetricalAnalytics({ baseURL: 'http://localhost:8080', writeKey: 'key' });
+      const client = new Metrical({ baseURL: 'http://localhost:8080', writeKey: 'key' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -58,14 +58,14 @@ describe('MetricalAnalytics', () => {
     });
 
     it('should assert configuration parameters', async () => {
-      const client = new MetricalAnalytics({ writeKey: null });
+      const client = new Metrical({ writeKey: null });
       const t = () => client.track({ event_name: 'Page Viewed' });
 
       await expect(t()).rejects.toThrow('Assert failed: writeKey is required');
     });
 
     it('should include identification relations', async () => {
-      const client = new MetricalAnalytics({ writeKey: 'key' });
+      const client = new Metrical({ writeKey: 'key' });
 
       client.identify({ user_id: 'user' });
 
@@ -89,7 +89,7 @@ describe('MetricalAnalytics', () => {
     });
 
     it('should include anonymous id when not identified and not include it when identified', async () => {
-      const client = new MetricalAnalytics({ writeKey: 'key' });
+      const client = new Metrical({ writeKey: 'key' });
 
       await client.track({ event_name: 'Page Viewed' });
       client.identify({ user_id: 'user' });

@@ -1,3 +1,3 @@
-import { MetricalAnalytics } from './client';
+import { Metrical } from './client';
 
-export { MetricalAnalytics };
+export { Metrical };

@@ -40,6 +40,6 @@ module.exports = [
         sourcemap: true,
       },
     ],
-    plugins: [typescript({ tsconfig: './tsconfig.json' }), terser({ keep_classnames: true })],
+    plugins: [typescript({ tsconfig: './tsconfig.json' }), resolve(), terser({ keep_classnames: true })],
   },
 ];

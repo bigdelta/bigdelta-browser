@@ -16,7 +16,7 @@ export interface Config {
 
 const IDENTIFICATION_KEY = 'metrical_analytics_identification';
 
-export class MetricalAnalytics {
+export class Metrical {
   private readonly config: FullConfig;
   private identification: Identification;
 
