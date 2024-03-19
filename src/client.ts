@@ -98,6 +98,10 @@ export class MetricalAnalytics {
   }
 
   private loadIdentification() {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
     const item = localStorage.getItem(IDENTIFICATION_KEY);
     if (!item || item.length < 1) {
       return;
@@ -109,6 +113,10 @@ export class MetricalAnalytics {
   }
 
   private saveIdentification() {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
     if (!this.identification) {
       localStorage.removeItem(IDENTIFICATION_KEY);
     } else {
