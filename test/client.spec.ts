@@ -110,7 +110,20 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/identify', {
+        body: JSON.stringify([
+          {
+            anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            user_id: 'user',
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/event', {
         body: JSON.stringify([
           {
             event_name: 'Page Viewed',
