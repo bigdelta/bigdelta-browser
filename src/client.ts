@@ -40,13 +40,13 @@ export class Metrical {
     }
 
     this.assertConfig();
-    const finalEvents = events.map(event => ({
+    const finalEvents = events.map((event) => ({
       ...event,
       relations: {
         ...this.getIdentificationRelations(),
-        ...(event.relations || {})
-      }
-    }))
+        ...(event.relations || {}),
+      },
+    }));
     await fetch(`${this.config.baseURL}/v1/ingestion/event`, {
       ...this.config.requestConfig,
       ...config,
@@ -61,7 +61,7 @@ export class Metrical {
     });
   }
 
-  public identify(identification: Identification) {
+  public identify(identification: Identification, config?: RequestInit) {
     const keys = Object.keys(identification || {});
     if (keys.length === 0) {
       return;
@@ -77,6 +77,8 @@ export class Metrical {
       return agg;
     }, this.identification || {});
 
+    this.identifyCallout(this.identification.anonymous_id, this.identification.user_id, config);
+
     delete this.identification.anonymous_id;
 
     this.saveIdentification();
@@ -87,10 +89,35 @@ export class Metrical {
     this.saveIdentification();
   }
 
+  private async identifyCallout(anonymousId: string, userId: string, config?: RequestInit) {
+    try {
+      if (!anonymousId || !userId) {
+        return;
+      }
+
+      this.assertConfig();
+
+      await fetch(`${this.config.baseURL}/v1/ingestion/identify`, {
+        ...this.config.requestConfig,
+        ...config,
+        method: 'POST',
+        headers: {
+          ...this.config.requestConfig?.headers,
+          ...config?.headers,
+          'x-write-key': this.config.writeKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{ anonymous_id: anonymousId, user_id: userId }]),
+      });
+    } catch (e) {
+      console.warn('Error occurred when making identify call', e);
+    }
+  }
+
   private getIdentificationRelations(): Relations {
     if (!this.identification) {
       this.identification = {
-        anonymous_id: uuid()
+        anonymous_id: uuid(),
       };
     }
 
