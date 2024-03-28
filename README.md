@@ -30,9 +30,11 @@ import { Metrical } from '@metrical-io/metrical-browser';
 
 const client = new Metrical({ writeKey: '<write key>' });
 
-client.identify({ user_id: '<user id>' });
+client.identify({ user_id: '<user id>' }); // it will be used while calling track method, enrich track request with relations
 
 await client.track({ event_name: 'Page Viewed' });
+
+await client.reset(); // resets identification
 ```
 
 ### Installing via script tag
@@ -47,5 +49,7 @@ const client = new Metrical({ writeKey: '<write key>' });
 client.identify({ user_id: '<user id>' });
 
 client.track({ event_name: 'Page Viewed' });
+
+client.reset();
 </script>
 ```
