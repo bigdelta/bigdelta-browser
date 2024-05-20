@@ -1,6 +1,5 @@
 import { Metrical } from '../src';
 import * as uuid from 'uuid';
-import Cookies from 'js-cookie';
 import { IDENTIFICATION_KEY } from '../src/client';
 
 jest.mock('uuid');
@@ -15,7 +14,18 @@ describe('Metrical', () => {
         writable: true,
         value: '',
       });
-
+      Object.defineProperty(global.document, 'title', {
+        value: 'Page Title',
+      });
+      Object.defineProperty(global.window, 'location', {
+        value: {
+          href: 'https://domain.com/path/index.html?foo=bar',
+          protocol: 'https:',
+          hostname: 'domain.com',
+          pathname: '/path/index.html',
+          search: '?foo=bar',
+        },
+      });
       jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
     });
 
@@ -156,6 +166,67 @@ describe('Metrical', () => {
       // in a browser it would be set on the top level domain instead
       // so this still correctly tests if we're selecting the top level domain from the root level upwards
       expect(document.cookie).toContain('domain=.com;');
+    });
+
+    it('should include default properties on page view track', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.trackPageView();
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify([
+          {
+            event_name: 'Page View',
+            properties: {
+              title: 'Page Title',
+              location: 'https://domain.com/path/index.html?foo=bar',
+              protocol: 'https:',
+              domain: 'domain.com',
+              path: '/path/index.html',
+              query: '?foo=bar',
+            },
+            relations: {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should use custom name and include override properties on page view track', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify([
+          {
+            event_name: 'Custom Page View',
+            properties: {
+              title: 'Page Title',
+              location: 'https://domain.com/path/index.html?foo=bar',
+              protocol: 'https:',
+              domain: 'domain.com',
+              path: '/path/index.html',
+              query: '?foo=bar',
+              my_prop: 'prop_value',
+            },
+            relations: {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
     });
   });
 });
