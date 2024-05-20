@@ -1,20 +1,23 @@
 import { EventPayload, Relations } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
+import Cookies from 'js-cookie';
 
 export interface FullConfig {
   baseURL: string;
   writeKey: string;
   requestConfig?: RequestInit;
+  cookieDomain?: string;
 }
 
 export interface Config {
   baseURL?: string;
   requestConfig?: RequestInit;
   writeKey: string;
+  cookieDomain?: string;
 }
 
-const IDENTIFICATION_KEY = 'metrical_analytics_identification';
+export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
 
 export class Metrical {
   private readonly config: FullConfig;
@@ -125,11 +128,11 @@ export class Metrical {
   }
 
   private loadIdentification() {
-    if (typeof localStorage === 'undefined') {
+    if (typeof document === 'undefined') {
       return;
     }
 
-    const item = localStorage.getItem(IDENTIFICATION_KEY);
+    const item = Cookies.get(IDENTIFICATION_KEY);
     if (!item || item.length < 1) {
       return;
     }
@@ -140,14 +143,15 @@ export class Metrical {
   }
 
   private saveIdentification() {
-    if (typeof localStorage === 'undefined') {
+    if (typeof document === 'undefined') {
       return;
     }
 
+    const cookieDomain = getCookieDomain(this.config);
     if (!this.identification) {
-      localStorage.removeItem(IDENTIFICATION_KEY);
+      Cookies.remove(IDENTIFICATION_KEY, { domain: cookieDomain });
     } else {
-      localStorage.setItem(IDENTIFICATION_KEY, JSON.stringify(this.identification));
+      Cookies.set(IDENTIFICATION_KEY, JSON.stringify(this.identification), { domain: cookieDomain, expires: 365 });
     }
   }
 
@@ -157,8 +161,34 @@ export class Metrical {
   }
 }
 
-const assert = function (condition: boolean, message: string): void {
+const assert = (condition: boolean, message: string): void => {
   if (!condition) {
     throw Error('Assert failed: ' + (message || ''));
   }
+};
+
+export const getCookieDomain = (config: FullConfig): string => {
+  if (config.cookieDomain) {
+    return config.cookieDomain;
+  }
+
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const randomCookieName = Math.random().toString(36).substring(3, 12);
+  const hostname = document.location.hostname.split('.');
+
+  for (let i = hostname.length - 1; i >= 0; i--) {
+    const cookieDomain = `.${hostname.slice(i).join('.')}`;
+    Cookies.set(randomCookieName, 'cookie', { domain: cookieDomain });
+
+    if (document.cookie.indexOf(randomCookieName) > -1) {
+      Cookies.remove(randomCookieName, { domain: cookieDomain });
+
+      return cookieDomain;
+    }
+  }
+
+  return null;
 };
