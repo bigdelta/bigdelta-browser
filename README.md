@@ -66,12 +66,12 @@ You can always specify a custom name and add additional properties as shown belo
 client.trackPageView({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }}));
 ```
 #### Automatic
-Page View events can be tracked automatically on every page load by configuring the `defaultTrackingConfig` during client creation (turned off by default), as shown below:
+Page View events can be tracked automatically on every page load by enabling the `defaultTrackingConfig.pageViews` during client creation (disabled by default), as shown below:
 ```html
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }}});
 ```
 
-To track dynamic page views in single-page applications, set the `singlePageAppTracking` option.
+To track dynamic page views in single-page applications, set the `defaultTrackingConfig.pageViews.singlePageAppTracking` option.
 
 ```html
 // Only track when the path changes, disregarding changes in the query string or hash.
@@ -82,6 +82,14 @@ const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { 
 
 // Track any URL changes.
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
+```
+
+### Marketing Attribution Tracking
+The library will automatically populate Page View events with any UTM parameters (`utm_source`, `utm_campaign`, `utm_medium`, `utm_term`, `utm_content`) or advertising click IDs (`dclid`, `fbclid`, `gbraid`, `gclid`, `ko_click_id`, `li_fat_id`, `msclkid`, `rtd_cid`, `ttclid`, `twclid`, `wbraid`) that are present on the page. 
+
+This default behavior can be turned off by disabling the `defaultTrackingConfig.marketingAttribution` option during client creation, as shown below:
+```html
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
 ```
 
 ## Identify users & companies

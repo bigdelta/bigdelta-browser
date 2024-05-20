@@ -5,6 +5,7 @@ export interface PageViewsConfig {
 
 export interface DefaultTrackingConfig {
   pageViews?: PageViewsConfig;
+  marketingAttribution?: boolean;
 }
 
 export interface FullConfig {
