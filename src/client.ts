@@ -182,24 +182,28 @@ export class Metrical {
   }
 
   private async initDefaultTracking(config: DefaultTrackingConfig) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     if (config?.pageViews?.enabled) {
       await this.trackPageView();
       let lastUrlTracked = window.location.href;
 
       if (config?.pageViews?.singlePageAppTracking) {
         window.addEventListener('popstate', function () {
-          window.dispatchEvent(new Event('metrical_location_change'));
+          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
         });
 
         window.addEventListener('hashchange', function () {
-          window.dispatchEvent(new Event('metrical_location_change'));
+          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
         });
 
         const nativePushState = window.history.pushState;
         if (typeof nativePushState === 'function') {
           window.history.pushState = function (state, unused, url) {
             nativePushState.call(window.history, state, unused, url);
-            window.dispatchEvent(new Event('metrical_location_change'));
+            window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
           };
         }
 
@@ -207,14 +211,14 @@ export class Metrical {
         if (typeof nativeReplaceState === 'function') {
           window.history.replaceState = function (state, unused, url) {
             nativeReplaceState.call(window.history, state, unused, url);
-            window.dispatchEvent(new Event('metrical_location_change'));
+            window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
           };
         }
 
         window.addEventListener(
           'metrical_location_change',
-          async function () {
-            const currentUrl = window.location.href;
+          async function (event: CustomEvent<string>) {
+            const currentUrl = event.detail;
 
             let track = false;
             if (config?.pageViews?.singlePageAppTracking === 'any') {
