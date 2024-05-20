@@ -21,11 +21,11 @@ describe('Metrical', () => {
       });
       Object.defineProperty(global.window, 'location', {
         value: {
-          href: 'https://domain.com/path/index.html?foo=bar',
+          href: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
           protocol: 'https:',
           hostname: 'domain.com',
           pathname: '/path/index.html',
-          search: '?foo=bar',
+          search: '?foo=bar&utm_campaign=campaign&gclid=id',
         },
       });
       jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
@@ -218,11 +218,13 @@ describe('Metrical', () => {
             event_name: 'Page View',
             properties: {
               title: 'Page Title',
-              location: 'https://domain.com/path/index.html?foo=bar',
+              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
               protocol: 'https:',
               domain: 'domain.com',
               path: '/path/index.html',
-              query: '?foo=bar',
+              query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              utm_campaign: 'campaign',
+              gclid: 'id',
             },
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
@@ -248,12 +250,44 @@ describe('Metrical', () => {
             event_name: 'Custom Page View',
             properties: {
               title: 'Page Title',
-              location: 'https://domain.com/path/index.html?foo=bar',
+              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
               protocol: 'https:',
               domain: 'domain.com',
               path: '/path/index.html',
-              query: '?foo=bar',
+              query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              utm_campaign: 'campaign',
+              gclid: 'id',
               my_prop: 'prop_value',
+            },
+            relations: {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should not include marketing attribution on page view track if disabled', async () => {
+      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { marketingAttribution: false } });
+
+      await client.trackPageView();
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify([
+          {
+            event_name: 'Page View',
+            properties: {
+              title: 'Page Title',
+              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+              protocol: 'https:',
+              domain: 'domain.com',
+              path: '/path/index.html',
+              query: '?foo=bar&utm_campaign=campaign&gclid=id',
             },
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',

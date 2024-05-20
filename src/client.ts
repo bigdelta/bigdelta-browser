@@ -4,6 +4,12 @@ import { v4 as uuid } from 'uuid';
 import Cookies, { CookieAttributes } from 'js-cookie';
 import { getCookieDomain } from './utils/getCookieDomain';
 import { ClientState, Config, DefaultTrackingConfig, FullConfig } from './model/config';
+import { getMarketingAttributionParameters } from './utils/getMarketingAttribution';
+
+interface PageContext {
+  location: Location;
+  document: Document;
+}
 
 export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
 export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
@@ -59,20 +65,7 @@ export class Metrical {
   }
 
   public async trackPageView(payload?: PageViewEventPayload) {
-    const finalProperties = {
-      title: document.title,
-      location: window.location.href,
-      protocol: window.location.protocol,
-      domain: window.location.hostname,
-      path: window.location.pathname,
-      query: window.location.search,
-      ...(payload?.properties || {}),
-    };
-    return await this.track({
-      ...(payload || {}),
-      event_name: payload?.event_name || 'Page View',
-      properties: finalProperties,
-    });
+    return await this.trackPageViewOf(currentPageContext(), payload);
   }
 
   public identify(identification: Identification, config?: RequestInit) {
@@ -105,6 +98,29 @@ export class Metrical {
   public async reset() {
     this.identification = null;
     this.saveIdentification();
+  }
+
+  public async trackPageViewOf(pageContext: PageContext, payload?: PageViewEventPayload) {
+    const isAttributionEnabled =
+      this.config?.defaultTrackingConfig?.marketingAttribution === undefined ||
+      this.config?.defaultTrackingConfig?.marketingAttribution;
+
+    const finalProperties = {
+      title: pageContext.document.title,
+      location: pageContext.location.href,
+      protocol: pageContext.location.protocol,
+      domain: pageContext.location.hostname,
+      path: pageContext.location.pathname,
+      query: pageContext.location.search,
+      ...(isAttributionEnabled ? getMarketingAttributionParameters(pageContext.location.href) : {}),
+      ...(payload?.properties || {}),
+    };
+
+    return await this.track({
+      ...(payload || {}),
+      event_name: payload?.event_name || 'Page View',
+      properties: finalProperties,
+    });
   }
 
   public disableTracking() {
@@ -216,23 +232,28 @@ export class Metrical {
     }
 
     if (config?.pageViews?.enabled) {
-      await this.trackPageView();
-      let lastUrlTracked = window.location.href;
+      const pageContext = currentPageContext();
+      await this.trackPageViewOf(pageContext);
+      let lastUrlTracked = pageContext.location.href;
 
       if (config?.pageViews?.singlePageAppTracking) {
         window.addEventListener('popstate', function () {
-          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
+          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
         });
 
         window.addEventListener('hashchange', function () {
-          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
+          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
         });
 
         const nativePushState = window.history.pushState;
         if (typeof nativePushState === 'function') {
           window.history.pushState = function (state, unused, url) {
             nativePushState.call(window.history, state, unused, url);
-            window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
+            window.dispatchEvent(
+              new CustomEvent('metrical_location_change', {
+                detail: currentPageContext(),
+              }),
+            );
           };
         }
 
@@ -240,27 +261,31 @@ export class Metrical {
         if (typeof nativeReplaceState === 'function') {
           window.history.replaceState = function (state, unused, url) {
             nativeReplaceState.call(window.history, state, unused, url);
-            window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: window.location.href }));
+            window.dispatchEvent(
+              new CustomEvent('metrical_location_change', {
+                detail: currentPageContext(),
+              }),
+            );
           };
         }
 
         window.addEventListener(
           'metrical_location_change',
-          async function (event: CustomEvent<string>) {
-            const currentUrl = event.detail;
+          async function (event: CustomEvent<PageContext>) {
+            const trackedUrl = event.detail.location.href;
 
             let track = false;
             if (config?.pageViews?.singlePageAppTracking === 'any') {
-              track = currentUrl !== lastUrlTracked;
+              track = trackedUrl !== lastUrlTracked;
             } else if (config?.pageViews?.singlePageAppTracking === 'path-with-query') {
-              track = currentUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
+              track = trackedUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
             } else if (config?.pageViews?.singlePageAppTracking === 'path') {
-              track = currentUrl.split('#')[0].split('?')[0] !== lastUrlTracked.split('#')[0].split('?')[0];
+              track = trackedUrl.split('#')[0].split('?')[0] !== lastUrlTracked.split('#')[0].split('?')[0];
             }
 
             if (track) {
               await this.trackPageView();
-              lastUrlTracked = currentUrl;
+              lastUrlTracked = trackedUrl;
             }
           }.bind(this),
         );
@@ -279,6 +304,10 @@ export class Metrical {
     Cookies.set(name, value, { domain: cookieDomain, expires: 365, ...options });
   }
 }
+
+const currentPageContext = (): PageContext => {
+  return { location: window.location, document: document };
+};
 
 const assert = (condition: boolean, message: string): void => {
   if (!condition) {
