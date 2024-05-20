@@ -10,3 +10,11 @@ export type EventPayload = {
   relations?: null | Relations;
   created_at?: null | string;
 };
+
+export type PageViewEventPayload = {
+  event_name?: null | string;
+  properties?: null | NestedObject;
+  relations?: null | Relations;
+  created_at?: null | string;
+};
+

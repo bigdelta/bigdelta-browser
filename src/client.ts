@@ -1,17 +1,28 @@
-import { EventPayload, Relations } from './model/eventPayload';
+import { EventPayload, PageViewEventPayload, Relations } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
+
+export interface PageViewsConfig {
+  enabled: boolean;
+  singlePageAppTracking?: 'path' | 'path-with-query' | 'any';
+}
+
+export interface DefaultTrackingConfig {
+  pageViews?: PageViewsConfig;
+}
 
 export interface FullConfig {
   baseURL: string;
   writeKey: string;
+  defaultTrackingConfig: DefaultTrackingConfig;
   requestConfig?: RequestInit;
 }
 
 export interface Config {
   baseURL?: string;
-  requestConfig?: RequestInit;
   writeKey: string;
+  defaultTrackingConfig?: DefaultTrackingConfig;
+  requestConfig?: RequestInit;
 }
 
 const IDENTIFICATION_KEY = 'metrical_analytics_identification';
@@ -23,9 +34,11 @@ export class Metrical {
   constructor(config: Config) {
     this.config = {
       baseURL: config.baseURL || 'https://api.metrical.io',
+      defaultTrackingConfig: config.defaultTrackingConfig || {},
       ...config,
     };
     this.loadIdentification();
+    this.initDefaultTracking(config.defaultTrackingConfig);
   }
 
   public async track(payload: EventPayload | EventPayload[], config?: RequestInit) {
@@ -58,6 +71,23 @@ export class Metrical {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(finalEvents),
+    });
+  }
+
+  public async trackPageView(payload?: PageViewEventPayload) {
+    const finalProperties = {
+      title: document.title,
+      location: window.location.href,
+      protocol: window.location.protocol,
+      domain: window.location.hostname,
+      path: window.location.pathname,
+      query: window.location.search,
+      ...(payload?.properties || {}),
+    };
+    return await this.track({
+      ...(payload || {}),
+      event_name: payload?.event_name || 'Page View',
+      properties: finalProperties,
     });
   }
 
@@ -148,6 +178,60 @@ export class Metrical {
       localStorage.removeItem(IDENTIFICATION_KEY);
     } else {
       localStorage.setItem(IDENTIFICATION_KEY, JSON.stringify(this.identification));
+    }
+  }
+
+  private async initDefaultTracking(config: DefaultTrackingConfig) {
+    if (config?.pageViews?.enabled) {
+      await this.trackPageView();
+      let lastUrlTracked = window.location.href;
+
+      if (config?.pageViews?.singlePageAppTracking) {
+        window.addEventListener('popstate', function () {
+          window.dispatchEvent(new Event('metrical_location_change'));
+        });
+
+        window.addEventListener('hashchange', function () {
+          window.dispatchEvent(new Event('metrical_location_change'));
+        });
+
+        const nativePushState = window.history.pushState;
+        if (typeof nativePushState === 'function') {
+          window.history.pushState = function (state, unused, url) {
+            nativePushState.call(window.history, state, unused, url);
+            window.dispatchEvent(new Event('metrical_location_change'));
+          };
+        }
+
+        const nativeReplaceState = window.history.replaceState;
+        if (typeof nativeReplaceState === 'function') {
+          window.history.replaceState = function (state, unused, url) {
+            nativeReplaceState.call(window.history, state, unused, url);
+            window.dispatchEvent(new Event('metrical_location_change'));
+          };
+        }
+
+        window.addEventListener(
+          'metrical_location_change',
+          async function () {
+            const currentUrl = window.location.href;
+
+            let track = false;
+            if (config?.pageViews?.singlePageAppTracking === 'any') {
+              track = currentUrl !== lastUrlTracked;
+            } else if (config?.pageViews?.singlePageAppTracking === 'path-with-query') {
+              track = currentUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
+            } else if (config?.pageViews?.singlePageAppTracking === 'path') {
+              track = currentUrl.split('#')[0].split('?')[0] !== lastUrlTracked.split('#')[0].split('?')[0];
+            }
+
+            if (track) {
+              await this.trackPageView();
+              lastUrlTracked = currentUrl;
+            }
+          }.bind(this),
+        );
+      }
     }
   }
 

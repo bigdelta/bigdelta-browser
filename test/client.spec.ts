@@ -10,6 +10,18 @@ describe('Metrical', () => {
     beforeEach(() => {
       global.fetch = jest.fn();
       global.localStorage.clear();
+      Object.defineProperty(global.document, 'title', {
+        value: 'Page Title',
+      });
+      Object.defineProperty(global.window, 'location', {
+        value: {
+          href: 'https://domain.com/path/index.html?foo=bar',
+          protocol: 'https:',
+          hostname: 'domain.com',
+          pathname: '/path/index.html',
+          search: '?foo=bar',
+        },
+      });
       jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
     });
 
@@ -129,6 +141,67 @@ describe('Metrical', () => {
             event_name: 'Page Viewed',
             relations: {
               user_id: 'user',
+            },
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should include default properties on page view track', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.trackPageView();
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify([
+          {
+            event_name: 'Page View',
+            properties: {
+              title: 'Page Title',
+              location: 'https://domain.com/path/index.html?foo=bar',
+              protocol: 'https:',
+              domain: 'domain.com',
+              path: '/path/index.html',
+              query: '?foo=bar',
+            },
+            relations: {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+          },
+        ]),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should use custom name and include override properties on page view track', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify([
+          {
+            event_name: 'Custom Page View',
+            properties: {
+              title: 'Page Title',
+              location: 'https://domain.com/path/index.html?foo=bar',
+              protocol: 'https:',
+              domain: 'domain.com',
+              path: '/path/index.html',
+              query: '?foo=bar',
+              my_prop: 'prop_value',
+            },
+            relations: {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
             },
           },
         ]),
