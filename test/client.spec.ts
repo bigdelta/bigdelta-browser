@@ -1,6 +1,8 @@
 import { Metrical } from '../src';
 import * as uuid from 'uuid';
-import { IDENTIFICATION_KEY } from '../src/client';
+import Cookies from 'js-cookie';
+import { IDENTIFICATION_KEY, TRACKING_ENABLED_STATE_KEY } from '../src/client';
+import { getCookieDomain } from '../src/utils/getCookieDomain';
 
 jest.mock('uuid');
 
@@ -166,6 +168,43 @@ describe('Metrical', () => {
       // in a browser it would be set on the top level domain instead
       // so this still correctly tests if we're selecting the top level domain from the root level upwards
       expect(document.cookie).toContain('domain=.com;');
+    });
+
+    it('should honor tracking disabled by default flag', async () => {
+      const client = new Metrical({ writeKey: 'key', disableTrackingByDefault: true });
+
+      client.identify({ user_id: 'user' });
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=false`);
+    });
+
+    it('should load tracking enabled flag from cookies', async () => {
+      Cookies.set(TRACKING_ENABLED_STATE_KEY, 'true', { domain: getCookieDomain({} as any), expires: 365 });
+
+      const client = new Metrical({ writeKey: 'key', disableTrackingByDefault: true });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(global.fetch).toHaveBeenCalled();
+      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=true`);
+    });
+
+    it('should toggle tracking using enable and disable calls', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      client.disableTracking();
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      client.enableTracking();
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=true`);
     });
 
     it('should include default properties on page view track', async () => {

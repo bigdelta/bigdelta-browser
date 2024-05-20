@@ -100,3 +100,22 @@ When your users logout you can trigger a reset method which will help reset the 
 ```html
 client.reset();
 ```
+
+## Protecting user data with Metrical
+
+Metrical prioritizes user privacy while providing flexibility in data collection. By default, Metrical is configured to transmit tracking data, but you have options to control this behavior.
+
+### Disabling tracking
+
+To prioritize user privacy, you can proactively disable tracking during initialization of the Metrical client. Set the `disableTrackingByDefault` property to `true`:
+
+```javascript
+const client = new Metrical({ writeKey: '<write key>', disableTrackingByDefault: true });
+```
+
+### Dynamically toggling tracking
+
+Metrical client allows you to dynamically manage tracking based on user preferences or specific scenarios. Use the following methods:
+
+- `client.enableTracking()` activates the transmission of tracking data (this is the default state).
+- `client.disableTracking()` deactivates the transmission of tracking data.
