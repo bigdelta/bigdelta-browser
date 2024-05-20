@@ -1,5 +1,7 @@
 import { Metrical } from '../src';
 import * as uuid from 'uuid';
+import Cookies from 'js-cookie';
+import { IDENTIFICATION_KEY } from '../src/client';
 
 jest.mock('uuid');
 
@@ -9,7 +11,11 @@ describe('Metrical', () => {
 
     beforeEach(() => {
       global.fetch = jest.fn();
-      global.localStorage.clear();
+      Object.defineProperty(global.document, 'cookie', {
+        writable: true,
+        value: '',
+      });
+
       jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
     });
 
@@ -138,6 +144,18 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
+    });
+
+    it('should set cookie on top accessible domain by default', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      client.identify({ user_id: 'user' });
+
+      expect(document.cookie).toContain(IDENTIFICATION_KEY);
+      // cookie is set on .com domain because in test environment it's permitted
+      // in a browser it would be set on the top level domain instead
+      // so this still correctly tests if we're selecting the top level domain from the root level upwards
+      expect(document.cookie).toContain('domain=.com;');
     });
   });
 });
