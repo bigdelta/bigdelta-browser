@@ -17,4 +17,3 @@ export type PageViewEventPayload = {
   relations?: null | Relations;
   created_at?: null | string;
 };
-
