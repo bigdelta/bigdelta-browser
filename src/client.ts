@@ -1,38 +1,17 @@
 import { EventPayload, PageViewEventPayload, Relations } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
-import Cookies from 'js-cookie';
-
-export interface PageViewsConfig {
-  enabled: boolean;
-  singlePageAppTracking?: 'path' | 'path-with-query' | 'any';
-}
-
-export interface DefaultTrackingConfig {
-  pageViews?: PageViewsConfig;
-}
-
-export interface FullConfig {
-  baseURL: string;
-  writeKey: string;
-  defaultTrackingConfig: DefaultTrackingConfig;
-  requestConfig?: RequestInit;
-  cookieDomain?: string;
-}
-
-export interface Config {
-  baseURL?: string;
-  writeKey: string;
-  cookieDomain?: string;
-  defaultTrackingConfig?: DefaultTrackingConfig;
-  requestConfig?: RequestInit;
-}
+import Cookies, { CookieAttributes } from 'js-cookie';
+import { getCookieDomain } from './utils/getCookieDomain';
+import { ClientState, Config, DefaultTrackingConfig, FullConfig } from './model/config';
 
 export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
+export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
 
 export class Metrical {
   private readonly config: FullConfig;
   private identification: Identification;
+  private state: ClientState;
 
   constructor(config: Config) {
     this.config = {
@@ -40,12 +19,14 @@ export class Metrical {
       defaultTrackingConfig: config.defaultTrackingConfig || {},
       ...config,
     };
+    this.initializeState();
+
     this.loadIdentification();
     this.initDefaultTracking(config.defaultTrackingConfig);
   }
 
   public async track(payload: EventPayload | EventPayload[], config?: RequestInit) {
-    if (!payload) {
+    if (!payload || !this.state.trackingEnabled) {
       return;
     }
 
@@ -95,6 +76,10 @@ export class Metrical {
   }
 
   public identify(identification: Identification, config?: RequestInit) {
+    if (!this.state.trackingEnabled) {
+      return;
+    }
+
     const keys = Object.keys(identification || {});
     if (keys.length === 0) {
       return;
@@ -120,6 +105,20 @@ export class Metrical {
   public async reset() {
     this.identification = null;
     this.saveIdentification();
+  }
+
+  public disableTracking() {
+    this.setState({
+      ...this.state,
+      trackingEnabled: false,
+    });
+  }
+
+  public enableTracking() {
+    this.setState({
+      ...this.state,
+      trackingEnabled: true,
+    });
   }
 
   private async identifyCallout(anonymousId: string, userId: string, config?: RequestInit) {
@@ -157,6 +156,32 @@ export class Metrical {
     return this.identification;
   }
 
+  private initializeState() {
+    let trackingEnabled = !this.config.disableTrackingByDefault;
+
+    if (typeof document !== 'undefined') {
+      const trackingEnabledCookie = Cookies.get(TRACKING_ENABLED_STATE_KEY);
+
+      if (trackingEnabledCookie && trackingEnabledCookie.length > 0) {
+        trackingEnabled = trackingEnabledCookie === 'true';
+      }
+    }
+
+    this.setState({
+      trackingEnabled,
+    });
+  }
+
+  private setState(state: ClientState) {
+    this.state = state;
+
+    if (typeof document !== 'undefined') {
+      if (typeof this.state.trackingEnabled === 'boolean') {
+        this.setCookie(TRACKING_ENABLED_STATE_KEY, this.state.trackingEnabled.toString());
+      }
+    }
+  }
+
   private loadIdentification() {
     if (typeof document === 'undefined') {
       return;
@@ -181,7 +206,7 @@ export class Metrical {
     if (!this.identification) {
       Cookies.remove(IDENTIFICATION_KEY, { domain: cookieDomain });
     } else {
-      Cookies.set(IDENTIFICATION_KEY, JSON.stringify(this.identification), { domain: cookieDomain, expires: 365 });
+      this.setCookie(IDENTIFICATION_KEY, JSON.stringify(this.identification));
     }
   }
 
@@ -247,36 +272,16 @@ export class Metrical {
     assert(!!this.config.baseURL, 'baseURL is required');
     assert(!!this.config.writeKey, 'writeKey is required');
   }
+
+  private setCookie(name: string, value: string, options: CookieAttributes = {}) {
+    const cookieDomain = getCookieDomain(this.config);
+
+    Cookies.set(name, value, { domain: cookieDomain, expires: 365, ...options });
+  }
 }
 
 const assert = (condition: boolean, message: string): void => {
   if (!condition) {
     throw Error('Assert failed: ' + (message || ''));
   }
-};
-
-export const getCookieDomain = (config: FullConfig): string => {
-  if (config.cookieDomain) {
-    return config.cookieDomain;
-  }
-
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const randomCookieName = Math.random().toString(36).substring(3, 12);
-  const hostname = document.location.hostname.split('.');
-
-  for (let i = hostname.length - 1; i >= 0; i--) {
-    const cookieDomain = `.${hostname.slice(i).join('.')}`;
-    Cookies.set(randomCookieName, 'cookie', { domain: cookieDomain });
-
-    if (document.cookie.indexOf(randomCookieName) > -1) {
-      Cookies.remove(randomCookieName, { domain: cookieDomain });
-
-      return cookieDomain;
-    }
-  }
-
-  return null;
 };
