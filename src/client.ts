@@ -5,6 +5,7 @@ import Cookies, { CookieAttributes } from 'js-cookie';
 import { getCookieDomain } from './utils/getCookieDomain';
 import { ClientState, Config, DefaultTrackingConfig, FullConfig } from './model/config';
 import { getMarketingAttributionParameters } from './utils/getMarketingAttribution';
+import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 
 interface PageContext {
   location: Location;
@@ -43,11 +44,29 @@ export class Metrical {
     }
 
     this.assertConfig();
+
+    const browserWithVersion = window ? getBrowserWithVersion(window.navigator.userAgent) : undefined;
+    const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
+    const deviceType = window ? getDeviceType(window.navigator.userAgent) : undefined;
+    const referrer = document ? document.referrer : undefined;
+    const referringDomain = this.parseReferringDomain(referrer);
+
     const finalEvents = events.map((event) => ({
       ...event,
       relations: {
         ...this.getIdentificationRelations(),
         ...(event.relations || {}),
+      },
+      properties: {
+        $screen_height: window ? window.screen.height : undefined,
+        $screen_width: window ? window.screen.width : undefined,
+        $referrer: referrer,
+        $referring_domain: referringDomain,
+        $operating_system: operatingSystem,
+        $device_type: deviceType,
+        $browser: browserWithVersion?.name,
+        $browser_version: browserWithVersion?.version,
+        ...(event.properties || {}),
       },
     }));
     await fetch(`${this.config.baseURL}/v1/ingestion/event`, {
@@ -106,12 +125,12 @@ export class Metrical {
       this.config?.defaultTrackingConfig?.marketingAttribution;
 
     const finalProperties = {
-      title: pageContext.document.title,
-      location: pageContext.location.href,
-      protocol: pageContext.location.protocol,
-      domain: pageContext.location.hostname,
-      path: pageContext.location.pathname,
-      query: pageContext.location.search,
+      $title: pageContext.document.title,
+      $location: pageContext.location.href,
+      $protocol: pageContext.location.protocol,
+      $domain: pageContext.location.hostname,
+      $path: pageContext.location.pathname,
+      $query: pageContext.location.search,
       ...(isAttributionEnabled ? getMarketingAttributionParameters(pageContext.location.href) : {}),
       ...(payload?.properties || {}),
     };
@@ -302,6 +321,17 @@ export class Metrical {
     const cookieDomain = getCookieDomain(this.config);
 
     Cookies.set(name, value, { domain: cookieDomain, expires: 365, ...options });
+  }
+
+  private parseReferringDomain(referrer: string) {
+    try {
+      if (!referrer) {
+        return undefined;
+      }
+      return new URL(referrer).hostname;
+    } catch (e) {
+      return undefined;
+    }
   }
 }
 

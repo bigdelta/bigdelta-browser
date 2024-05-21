@@ -49,6 +49,18 @@ You can track an event by calling `client.track()` with the event name and its p
 ```html
 client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }});
 ```
+
+The following properties are default properties automatically included with every track event:
+
+- Screen Height
+- Screen Width
+- Referrer
+- Referring Domain
+- Operating System
+- Device Type
+- Browser
+- Browser Version
+
 All events are sent via HTTPS.
 
 ### Page Views Tracking

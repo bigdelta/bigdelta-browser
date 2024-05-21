@@ -19,6 +19,9 @@ describe('Metrical', () => {
       Object.defineProperty(global.document, 'title', {
         value: 'Page Title',
       });
+      Object.defineProperty(global.document, 'referrer', {
+        value: 'https://www.google.com/',
+      });
       Object.defineProperty(global.window, 'location', {
         value: {
           href: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
@@ -27,6 +30,16 @@ describe('Metrical', () => {
           pathname: '/path/index.html',
           search: '?foo=bar&utm_campaign=campaign&gclid=id',
         },
+      });
+      Object.defineProperty(global.window, 'screen', {
+        value: {
+          height: 768,
+          width: 1024,
+        },
+      });
+      Object.defineProperty(global.window.navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       });
       jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
     });
@@ -42,6 +55,16 @@ describe('Metrical', () => {
             event_name: 'Page Viewed',
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+            properties: {
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
             },
           },
         ]),
@@ -64,6 +87,16 @@ describe('Metrical', () => {
             event_name: 'Page Viewed',
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+            properties: {
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
             },
           },
         ]),
@@ -96,6 +129,16 @@ describe('Metrical', () => {
             relations: {
               user_id: 'user',
             },
+            properties: {
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
+            },
           },
         ]),
         headers: {
@@ -119,6 +162,16 @@ describe('Metrical', () => {
             event_name: 'Page Viewed',
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+            },
+            properties: {
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
             },
           },
         ]),
@@ -147,6 +200,16 @@ describe('Metrical', () => {
             event_name: 'Page Viewed',
             relations: {
               user_id: 'user',
+            },
+            properties: {
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
             },
           },
         ]),
@@ -217,12 +280,20 @@ describe('Metrical', () => {
           {
             event_name: 'Page View',
             properties: {
-              title: 'Page Title',
-              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              protocol: 'https:',
-              domain: 'domain.com',
-              path: '/path/index.html',
-              query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
+              $title: 'Page Title',
+              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+              $protocol: 'https:',
+              $domain: 'domain.com',
+              $path: '/path/index.html',
+              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
               utm_campaign: 'campaign',
               gclid: 'id',
             },
@@ -249,12 +320,20 @@ describe('Metrical', () => {
           {
             event_name: 'Custom Page View',
             properties: {
-              title: 'Page Title',
-              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              protocol: 'https:',
-              domain: 'domain.com',
-              path: '/path/index.html',
-              query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
+              $title: 'Page Title',
+              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+              $protocol: 'https:',
+              $domain: 'domain.com',
+              $path: '/path/index.html',
+              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
               utm_campaign: 'campaign',
               gclid: 'id',
               my_prop: 'prop_value',
@@ -282,12 +361,20 @@ describe('Metrical', () => {
           {
             event_name: 'Page View',
             properties: {
-              title: 'Page Title',
-              location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              protocol: 'https:',
-              domain: 'domain.com',
-              path: '/path/index.html',
-              query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              $screen_height: 768,
+              $screen_width: 1024,
+              $referrer: 'https://www.google.com/',
+              $referring_domain: 'www.google.com',
+              $operating_system: 'Mac OS X 10.15.7',
+              $device_type: 'Desktop',
+              $browser: 'Google Chrome',
+              $browser_version: '124.0',
+              $title: 'Page Title',
+              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+              $protocol: 'https:',
+              $domain: 'domain.com',
+              $path: '/path/index.html',
+              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
             },
             relations: {
               anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
