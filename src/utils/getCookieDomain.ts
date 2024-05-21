@@ -15,10 +15,11 @@ export const getCookieDomain = (config: FullConfig): string => {
 
   for (let i = hostname.length - 1; i >= 0; i--) {
     const cookieDomain = `.${hostname.slice(i).join('.')}`;
-    Cookies.set(randomCookieName, 'cookie', { domain: cookieDomain });
+    const options = { domain: cookieDomain, path: '/' };
+    Cookies.set(randomCookieName, 'cookie', options);
 
     if (document.cookie.indexOf(randomCookieName) > -1) {
-      Cookies.remove(randomCookieName, { domain: cookieDomain });
+      Cookies.remove(randomCookieName, options);
 
       return cookieDomain;
     }

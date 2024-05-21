@@ -15,6 +15,7 @@ export interface FullConfig {
   requestConfig?: RequestInit;
   cookieDomain?: string;
   disableTrackingByDefault?: boolean;
+  trackIpAndGeolocation?: boolean;
 }
 
 export interface Config {
@@ -24,8 +25,10 @@ export interface Config {
   defaultTrackingConfig?: DefaultTrackingConfig;
   requestConfig?: RequestInit;
   disableTrackingByDefault?: boolean;
+  trackIpAndGeolocation?: boolean;
 }
 
 export interface ClientState {
   trackingEnabled: boolean;
+  trackIpAndGeolocation: boolean;
 }
