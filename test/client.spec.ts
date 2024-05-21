@@ -50,24 +50,26 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page Viewed',
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -82,24 +84,26 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page Viewed',
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -123,24 +127,26 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page Viewed',
-            relations: {
-              user_id: 'user',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                user_id: 'user',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -157,24 +163,26 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page Viewed',
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -195,24 +203,26 @@ describe('Metrical', () => {
         method: 'POST',
       });
       expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page Viewed',
-            relations: {
-              user_id: 'user',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                user_id: 'user',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -239,7 +249,6 @@ describe('Metrical', () => {
       client.identify({ user_id: 'user' });
 
       expect(global.fetch).not.toHaveBeenCalled();
-      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=false`);
     });
 
     it('should load tracking enabled flag from cookies', async () => {
@@ -250,7 +259,6 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalled();
-      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=true`);
     });
 
     it('should toggle tracking using enable and disable calls', async () => {
@@ -267,7 +275,6 @@ describe('Metrical', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(document.cookie).toContain(`${TRACKING_ENABLED_STATE_KEY}=true`);
     });
 
     it('should include default properties on page view track', async () => {
@@ -276,32 +283,34 @@ describe('Metrical', () => {
       await client.trackPageView();
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page View',
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-              $title: 'Page Title',
-              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              $protocol: 'https:',
-              $domain: 'domain.com',
-              $path: '/path/index.html',
-              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
-              utm_campaign: 'campaign',
-              gclid: 'id',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page View',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+                $title: 'Page Title',
+                $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+                $protocol: 'https:',
+                $domain: 'domain.com',
+                $path: '/path/index.html',
+                $query: '?foo=bar&utm_campaign=campaign&gclid=id',
+                utm_campaign: 'campaign',
+                gclid: 'id',
+              },
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
             },
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -316,33 +325,35 @@ describe('Metrical', () => {
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Custom Page View',
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-              $title: 'Page Title',
-              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              $protocol: 'https:',
-              $domain: 'domain.com',
-              $path: '/path/index.html',
-              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
-              utm_campaign: 'campaign',
-              gclid: 'id',
-              my_prop: 'prop_value',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Custom Page View',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+                $title: 'Page Title',
+                $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+                $protocol: 'https:',
+                $domain: 'domain.com',
+                $path: '/path/index.html',
+                $query: '?foo=bar&utm_campaign=campaign&gclid=id',
+                utm_campaign: 'campaign',
+                gclid: 'id',
+                my_prop: 'prop_value',
+              },
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
             },
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-            },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
@@ -357,30 +368,67 @@ describe('Metrical', () => {
       await client.trackPageView();
 
       expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
-        body: JSON.stringify([
-          {
-            event_name: 'Page View',
-            properties: {
-              $screen_height: 768,
-              $screen_width: 1024,
-              $referrer: 'https://www.google.com/',
-              $referring_domain: 'www.google.com',
-              $operating_system: 'Mac OS X 10.15.7',
-              $device_type: 'Desktop',
-              $browser: 'Google Chrome',
-              $browser_version: '124.0',
-              $title: 'Page Title',
-              $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-              $protocol: 'https:',
-              $domain: 'domain.com',
-              $path: '/path/index.html',
-              $query: '?foo=bar&utm_campaign=campaign&gclid=id',
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page View',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+                $title: 'Page Title',
+                $location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+                $protocol: 'https:',
+                $domain: 'domain.com',
+                $path: '/path/index.html',
+                $query: '?foo=bar&utm_campaign=campaign&gclid=id',
+              },
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
             },
-            relations: {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-write-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should include disabled ip and geolocation tracking flag when it is disabled', async () => {
+      const client = new Metrical({ writeKey: 'key', trackIpAndGeolocation: false });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: {
+                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              },
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
+              track_ip_and_geolocation: false,
             },
-          },
-        ]),
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',

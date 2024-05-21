@@ -139,3 +139,13 @@ Metrical client allows you to dynamically manage tracking based on user preferen
 
 - `client.enableTracking()` activates the transmission of tracking data (this is the default state).
 - `client.disableTracking()` deactivates the transmission of tracking data.
+
+### Controlling IP Address and Geolocation Tracking
+For more precise control over user privacy, Metrical offers the option to specifically toggle the tracking of IP address and geolocation information. Use the `trackIpAndGeolocation` property during initialization:
+
+```javascript
+const client = new Metrical({ 
+    writeKey: '<write key>', 
+    trackIpAndGeolocation: false  // Disable IP and geolocation tracking
+});
+```

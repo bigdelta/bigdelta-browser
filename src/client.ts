@@ -14,6 +14,7 @@ interface PageContext {
 
 export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
 export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
+export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'metrical_analytics_track_ip_and_geolocation';
 
 export class Metrical {
   private readonly config: FullConfig;
@@ -68,6 +69,11 @@ export class Metrical {
         $browser_version: browserWithVersion?.version,
         ...(event.properties || {}),
       },
+      ...(this.state.trackIpAndGeolocation === false
+        ? {
+            track_ip_and_geolocation: this.state.trackIpAndGeolocation,
+          }
+        : {}),
     }));
     await fetch(`${this.config.baseURL}/v1/ingestion/event`, {
       ...this.config.requestConfig,
@@ -79,7 +85,9 @@ export class Metrical {
         'x-write-key': this.config.writeKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(finalEvents),
+      body: JSON.stringify({
+        events: finalEvents,
+      }),
     });
   }
 
@@ -193,17 +201,24 @@ export class Metrical {
 
   private initializeState() {
     let trackingEnabled = !this.config.disableTrackingByDefault;
+    let trackIpAndGeolocation = this.config.trackIpAndGeolocation !== false;
 
     if (typeof document !== 'undefined') {
       const trackingEnabledCookie = Cookies.get(TRACKING_ENABLED_STATE_KEY);
+      const trackIpAndGeolocationCookie = Cookies.get(TRACK_IP_AND_GEOLOCATION_STATE_KEY);
 
       if (trackingEnabledCookie && trackingEnabledCookie.length > 0) {
         trackingEnabled = trackingEnabledCookie === 'true';
+      }
+
+      if (trackIpAndGeolocationCookie && trackIpAndGeolocationCookie.length > 0) {
+        trackIpAndGeolocation = trackIpAndGeolocationCookie === 'true';
       }
     }
 
     this.setState({
       trackingEnabled,
+      trackIpAndGeolocation,
     });
   }
 
@@ -213,6 +228,10 @@ export class Metrical {
     if (typeof document !== 'undefined') {
       if (typeof this.state.trackingEnabled === 'boolean') {
         this.setCookie(TRACKING_ENABLED_STATE_KEY, this.state.trackingEnabled.toString());
+      }
+
+      if (typeof this.state.trackIpAndGeolocation === 'boolean') {
+        this.setCookie(TRACK_IP_AND_GEOLOCATION_STATE_KEY, this.state.trackIpAndGeolocation.toString());
       }
     }
   }
@@ -237,9 +256,8 @@ export class Metrical {
       return;
     }
 
-    const cookieDomain = getCookieDomain(this.config);
     if (!this.identification) {
-      Cookies.remove(IDENTIFICATION_KEY, { domain: cookieDomain });
+      this.removeCookie(IDENTIFICATION_KEY);
     } else {
       this.setCookie(IDENTIFICATION_KEY, JSON.stringify(this.identification));
     }
@@ -320,7 +338,13 @@ export class Metrical {
   private setCookie(name: string, value: string, options: CookieAttributes = {}) {
     const cookieDomain = getCookieDomain(this.config);
 
-    Cookies.set(name, value, { domain: cookieDomain, expires: 365, ...options });
+    Cookies.set(name, value, { domain: cookieDomain, expires: 365, path: '/', ...options });
+  }
+
+  private removeCookie(name: string, options: CookieAttributes = {}) {
+    const cookieDomain = getCookieDomain(this.config);
+
+    Cookies.remove(name, { domain: cookieDomain, path: '/', ...options });
   }
 
   private parseReferringDomain(referrer: string) {
