@@ -83,17 +83,20 @@ Page View events can be tracked automatically on every page load by enabling the
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }}});
 ```
 
-To track dynamic page views in single-page applications, set the `defaultTrackingConfig.pageViews.singlePageAppTracking` option.
+Dynamic page views in single-page applications are tracked on any URL changes by default. You can control this behavior with the `defaultTrackingConfig.pageViews.singlePageAppTracking` option, as shown below:
 
 ```html
-// Only track when the path changes, disregarding changes in the query string or hash.
-const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
+// Track any URL changes.
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
 
 // Track when the path or query string changes, ignoring changes in the hash.
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path-with-query' }}});
+    
+// Only track when the path changes, disregarding changes in the query string or hash.
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
 
-// Track any URL changes.
-const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
+// Disable dynamic page views tracking in single-page applications.
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
 ```
 
 ### Marketing Attribution Tracking

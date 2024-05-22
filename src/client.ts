@@ -273,7 +273,7 @@ export class Metrical {
       await this.trackPageViewOf(pageContext);
       let lastUrlTracked = pageContext.location.href;
 
-      if (config?.pageViews?.singlePageAppTracking) {
+      if (config?.pageViews?.singlePageAppTracking !== 'disabled') {
         window.addEventListener('popstate', function () {
           window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
         });
@@ -312,7 +312,7 @@ export class Metrical {
             const trackedUrl = event.detail.location.href;
 
             let track = false;
-            if (config?.pageViews?.singlePageAppTracking === 'any') {
+            if (!config?.pageViews?.singlePageAppTracking || config?.pageViews?.singlePageAppTracking === 'any') {
               track = trackedUrl !== lastUrlTracked;
             } else if (config?.pageViews?.singlePageAppTracking === 'path-with-query') {
               track = trackedUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
