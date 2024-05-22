@@ -1,6 +1,6 @@
 export interface PageViewsConfig {
   enabled: boolean;
-  singlePageAppTracking?: 'path' | 'path-with-query' | 'any';
+  singlePageAppTracking?: 'path' | 'path-with-query' | 'any' | 'disabled';
 }
 
 export interface DefaultTrackingConfig {
