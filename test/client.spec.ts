@@ -436,5 +436,14 @@ describe('Metrical', () => {
         method: 'POST',
       });
     });
+
+    it('should save anonymous id to storage', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(global.fetch).toHaveBeenCalled();
+      expect(document.cookie).toContain(IDENTIFICATION_KEY);
+    });
   });
 });

@@ -194,6 +194,8 @@ export class Metrical {
       this.identification = {
         anonymous_id: uuid(),
       };
+
+      this.saveIdentification();
     }
 
     return this.identification;
