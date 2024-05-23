@@ -124,6 +124,17 @@ When your users logout you can trigger a reset method which will help reset the 
 client.reset();
 ```
 
+### Persistent Storage
+By default, cookies with a localStorage fallback are used to store state in the browser. You can control this behavior with the `storageType` option, as shown below:
+
+```html
+// Use cookies explicitly.
+const client = new Metrical({ writeKey: '<write key>', storageType: 'cookies'});
+
+// Use localStorage explicitly.
+const client = new Metrical({ writeKey: '<write key>', storageType: 'localStorage'});
+```
+
 ## Protecting user data with Metrical
 
 Metrical prioritizes user privacy while providing flexibility in data collection. By default, Metrical is configured to transmit tracking data, but you have options to control this behavior.

@@ -1,3 +1,5 @@
+export type StorageType = 'cookies' | 'localStorage';
+
 export interface PageViewsConfig {
   enabled: boolean;
   singlePageAppTracking?: 'path' | 'path-with-query' | 'any' | 'disabled';
@@ -16,6 +18,7 @@ export interface FullConfig {
   cookieDomain?: string;
   disableTrackingByDefault?: boolean;
   trackIpAndGeolocation?: boolean;
+  storageType?: StorageType;
 }
 
 export interface Config {
@@ -26,6 +29,7 @@ export interface Config {
   requestConfig?: RequestInit;
   disableTrackingByDefault?: boolean;
   trackIpAndGeolocation?: boolean;
+  storageType?: StorageType;
 }
 
 export interface ClientState {
