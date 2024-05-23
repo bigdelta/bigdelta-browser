@@ -1,8 +1,8 @@
 import { Metrical } from '../src';
 import * as uuid from 'uuid';
 import Cookies from 'js-cookie';
-import { IDENTIFICATION_KEY, TRACKING_ENABLED_STATE_KEY } from '../src/client';
 import { getCookieDomain } from '../src/utils/getCookieDomain';
+import { IDENTIFICATION_KEY, TRACKING_ENABLED_STATE_KEY } from '../src/utils/persistentStorage';
 
 jest.mock('uuid');
 

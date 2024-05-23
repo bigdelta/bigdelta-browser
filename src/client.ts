@@ -1,25 +1,22 @@
 import { EventPayload, PageViewEventPayload, Relations } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
-import Cookies, { CookieAttributes } from 'js-cookie';
-import { getCookieDomain } from './utils/getCookieDomain';
 import { ClientState, Config, DefaultTrackingConfig, FullConfig } from './model/config';
 import { getMarketingAttributionParameters } from './utils/getMarketingAttribution';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
+import { PersistentStorage } from './utils/persistentStorage';
 
 interface PageContext {
   location: Location;
   document: Document;
 }
 
-export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
-export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
-export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'metrical_analytics_track_ip_and_geolocation';
-
 export class Metrical {
   private readonly config: FullConfig;
+  private persistentStorage: PersistentStorage;
+
   private identification: Identification;
-  private state: ClientState;
+  private clientState: ClientState;
 
   constructor(config: Config) {
     this.config = {
@@ -27,14 +24,16 @@ export class Metrical {
       defaultTrackingConfig: config.defaultTrackingConfig || {},
       ...config,
     };
-    this.initializeState();
+    this.persistentStorage = new PersistentStorage(this.config);
 
-    this.loadIdentification();
+    this.clientState = this.persistentStorage.loadClientState();
+    this.identification = this.persistentStorage.loadIdentification();
+
     this.initDefaultTracking(config.defaultTrackingConfig);
   }
 
   public async track(payload: EventPayload | EventPayload[], config?: RequestInit) {
-    if (!payload || !this.state.trackingEnabled) {
+    if (!payload || !this.clientState.trackingEnabled) {
       return;
     }
 
@@ -69,9 +68,9 @@ export class Metrical {
         $browser_version: browserWithVersion?.version,
         ...(event.properties || {}),
       },
-      ...(this.state.trackIpAndGeolocation === false
+      ...(this.clientState.trackIpAndGeolocation === false
         ? {
-            track_ip_and_geolocation: this.state.trackIpAndGeolocation,
+            track_ip_and_geolocation: this.clientState.trackIpAndGeolocation,
           }
         : {}),
     }));
@@ -96,7 +95,7 @@ export class Metrical {
   }
 
   public identify(identification: Identification, config?: RequestInit) {
-    if (!this.state.trackingEnabled) {
+    if (!this.clientState.trackingEnabled) {
       return;
     }
 
@@ -119,15 +118,29 @@ export class Metrical {
 
     delete this.identification.anonymous_id;
 
-    this.saveIdentification();
+    this.persistentStorage.saveIdentification(this.identification);
   }
 
   public async reset() {
     this.identification = null;
-    this.saveIdentification();
+    this.persistentStorage.saveIdentification(null);
   }
 
-  public async trackPageViewOf(pageContext: PageContext, payload?: PageViewEventPayload) {
+  public disableTracking() {
+    this.setState({
+      ...this.clientState,
+      trackingEnabled: false,
+    });
+  }
+
+  public enableTracking() {
+    this.setState({
+      ...this.clientState,
+      trackingEnabled: true,
+    });
+  }
+
+  private async trackPageViewOf(pageContext: PageContext, payload?: PageViewEventPayload) {
     const isAttributionEnabled =
       this.config?.defaultTrackingConfig?.marketingAttribution === undefined ||
       this.config?.defaultTrackingConfig?.marketingAttribution;
@@ -147,20 +160,6 @@ export class Metrical {
       ...(payload || {}),
       event_name: payload?.event_name || 'Page View',
       properties: finalProperties,
-    });
-  }
-
-  public disableTracking() {
-    this.setState({
-      ...this.state,
-      trackingEnabled: false,
-    });
-  }
-
-  public enableTracking() {
-    this.setState({
-      ...this.state,
-      trackingEnabled: true,
     });
   }
 
@@ -195,74 +194,15 @@ export class Metrical {
         anonymous_id: uuid(),
       };
 
-      this.saveIdentification();
+      this.persistentStorage.saveIdentification(this.identification);
     }
 
     return this.identification;
   }
 
-  private initializeState() {
-    let trackingEnabled = !this.config.disableTrackingByDefault;
-    let trackIpAndGeolocation = this.config.trackIpAndGeolocation !== false;
-
-    if (typeof document !== 'undefined') {
-      const trackingEnabledCookie = Cookies.get(TRACKING_ENABLED_STATE_KEY);
-      const trackIpAndGeolocationCookie = Cookies.get(TRACK_IP_AND_GEOLOCATION_STATE_KEY);
-
-      if (trackingEnabledCookie && trackingEnabledCookie.length > 0) {
-        trackingEnabled = trackingEnabledCookie === 'true';
-      }
-
-      if (trackIpAndGeolocationCookie && trackIpAndGeolocationCookie.length > 0) {
-        trackIpAndGeolocation = trackIpAndGeolocationCookie === 'true';
-      }
-    }
-
-    this.setState({
-      trackingEnabled,
-      trackIpAndGeolocation,
-    });
-  }
-
-  private setState(state: ClientState) {
-    this.state = state;
-
-    if (typeof document !== 'undefined') {
-      if (typeof this.state.trackingEnabled === 'boolean') {
-        this.setCookie(TRACKING_ENABLED_STATE_KEY, this.state.trackingEnabled.toString());
-      }
-
-      if (typeof this.state.trackIpAndGeolocation === 'boolean') {
-        this.setCookie(TRACK_IP_AND_GEOLOCATION_STATE_KEY, this.state.trackIpAndGeolocation.toString());
-      }
-    }
-  }
-
-  private loadIdentification() {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const item = Cookies.get(IDENTIFICATION_KEY);
-    if (!item || item.length < 1) {
-      return;
-    }
-
-    try {
-      this.identification = JSON.parse(item);
-    } catch (e) {}
-  }
-
-  private saveIdentification() {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    if (!this.identification) {
-      this.removeCookie(IDENTIFICATION_KEY);
-    } else {
-      this.setCookie(IDENTIFICATION_KEY, JSON.stringify(this.identification));
-    }
+  private setState(clientState: ClientState) {
+    this.clientState = clientState;
+    this.persistentStorage.saveClientState(clientState);
   }
 
   private async initDefaultTracking(config: DefaultTrackingConfig) {
@@ -335,18 +275,6 @@ export class Metrical {
   private assertConfig() {
     assert(!!this.config.baseURL, 'baseURL is required');
     assert(!!this.config.writeKey, 'writeKey is required');
-  }
-
-  private setCookie(name: string, value: string, options: CookieAttributes = {}) {
-    const cookieDomain = getCookieDomain(this.config);
-
-    Cookies.set(name, value, { domain: cookieDomain, expires: 365, path: '/', ...options });
-  }
-
-  private removeCookie(name: string, options: CookieAttributes = {}) {
-    const cookieDomain = getCookieDomain(this.config);
-
-    Cookies.remove(name, { domain: cookieDomain, path: '/', ...options });
   }
 
   private parseReferringDomain(referrer: string) {
