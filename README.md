@@ -107,6 +107,14 @@ This default behavior can be turned off by disabling the `defaultTrackingConfig.
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
 ```
 
+### Events Deduplication
+
+By default, all events, even if identical, are treated as unique and recorded in the system each time they are sent. However, you can specify a special property, `$deduplication_id` (of type `string`), to assign a unique identifier to an event. It allows deduplication of events that are accidentally sent multiple times. All subsequent events with the same `$deduplication_id` will be ignored and not recorded in the system.
+
+```html
+client.track({ event_name: 'My Custom Unique Event', properties: { my_property: 'property_value', $deduplication_id: 'unique_id' }});
+```
+
 ## Identify users & companies
 You can manage user identity through the `client.identify()` and `client.reset()` methods. Utilizing these methods correctly ensures that events are appropriately linked to the user, regardless of their transitions across devices and browsers.
 
