@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <script type="module" src="/src/main.ts"></script>
-  </head>
-  <body>
-    <button onclick="window.metricalClient.identify({ user_id: 'user' })">identify</button>
-    <button onclick="window.metricalClient.track({event_name: 'Page Viewed'})">track</button>
-  </body>
+</head>
+<body>
+<button onclick="window.metricalClient.identify({ user_id: 'user' })">identify</button>
+<button onclick="window.metricalClient.track({event_name: 'Page Viewed'})">track</button>
+<br/>
+<button onclick="window.metricalClient.trackEventOnFormSubmit('#some-form', 'test')">track form</button>
+<button onclick="window.addForm()">add form</button>
+</body>
 </html>

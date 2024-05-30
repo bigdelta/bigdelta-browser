@@ -63,6 +63,30 @@ The following properties are default properties automatically included with ever
 
 All events are sent via HTTPS.
 
+### Track form submissions
+
+This function automates the process of tracking form submissions and sending them to Metrical as custom events.
+
+Form data is attached to the tracked event as properties.
+
+#### Parameters
+- **selector (string, required)**: A CSS selector that identifies the form(s) you want to track (e.g., #contact-form, .newsletter-signup).
+- **eventName (string, required)**: The name for the event in Metrical when a form is submitted (e.g., "Contact Form Submission").
+
+#### Usage
+
+```javascript
+// Track contact form submissions
+client.trackEventOnFormSubmit("#contact-form", "Contact Form Submission");
+
+// Track newsletter signups
+client.trackEventOnFormSubmit(".newsletter-signup", "Newsletter Signup");
+```
+
+#### Important Notes
+- **Data Sensitivity**: Be careful not to collect sensitive user information without consent.
+- **Event Naming**: Use clear, consistent event names for easy analysis in Metrical.
+
 ### Page Views Tracking
 #### Manual
 You can track a page view event by calling `client.trackPageView()`. By default, 'Page View' is used as the event name, and the following properties are recorded:
