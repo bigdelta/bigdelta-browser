@@ -5,6 +5,7 @@ import { ClientState, Config, DefaultTrackingConfig, FullConfig } from './model/
 import { getMarketingAttributionParameters } from './utils/getMarketingAttribution';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
+import { FormTracker } from './formTracker';
 
 interface PageContext {
   location: Location;
@@ -92,6 +93,31 @@ export class Metrical {
 
   public async trackPageView(payload?: PageViewEventPayload) {
     return await this.trackPageViewOf(currentPageContext(), payload);
+  }
+
+  public trackEventOnFormSubmit(selector: string, eventName: string) {
+    const formTracker = new FormTracker(selector, async (form, callback) => {
+      try {
+        const formData = new FormData(form);
+        const formEntries = Array.from(formData.entries());
+        const stringEntries: [string, string][] = formEntries
+          .filter(([_, value]) => typeof value === 'string')
+          .map(([key, value]) => [key, value.toString()]);
+
+        const properties = Object.fromEntries(stringEntries);
+
+        await this.track({
+          event_name: eventName,
+          properties,
+        });
+      } catch (e) {
+        console.log('Error tracking form submit', e);
+      }
+
+      callback();
+    });
+
+    formTracker.init();
   }
 
   public identify(identification: Identification, config?: RequestInit) {
