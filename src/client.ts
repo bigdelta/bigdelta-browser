@@ -6,6 +6,7 @@ import { getMarketingAttributionParameters } from './utils/getMarketingAttributi
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
 import { FormTracker } from './formTracker';
+import {NestedObject} from "./model/nestedObject";
 
 interface PageContext {
   location: Location;
@@ -147,6 +148,22 @@ export class Metrical {
     this.persistentStorage.saveIdentification(this.identification);
   }
 
+  public setUserProperties(properties: NestedObject, userId?: string, config?: RequestInit) {
+    if (!this.clientState.trackingEnabled) {
+      return;
+    }
+
+    const relations = this.getIdentificationRelations();
+    if (!userId) {
+      if (!relations?.user_id) {
+        return;
+      }
+      userId = relations.user_id;
+    }
+
+    this.setUserPropertiesCallout(userId, properties, config);
+  }
+
   public async reset() {
     this.identification = null;
     this.persistentStorage.saveIdentification(null);
@@ -211,6 +228,31 @@ export class Metrical {
       });
     } catch (e) {
       console.warn('Error occurred when making identify call', e);
+    }
+  }
+
+  private async setUserPropertiesCallout(userId: string, properties: NestedObject, config?: RequestInit) {
+    try {
+      if (!userId) {
+        return;
+      }
+
+      this.assertConfig();
+
+      await fetch(`${this.config.baseURL}/v1/ingestion/user`, {
+        ...this.config.requestConfig,
+        ...config,
+        method: 'POST',
+        headers: {
+          ...this.config.requestConfig?.headers,
+          ...config?.headers,
+          'x-write-key': this.config.writeKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({users: [{ id: userId, properties }]}),
+      });
+    } catch (e) {
+      console.warn('Error occurred when making ingest user call', e);
     }
   }
 
