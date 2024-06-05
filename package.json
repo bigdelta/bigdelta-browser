@@ -23,6 +23,16 @@
     "lint:fix": "prettier src test --write",
     "dev": "vite --host 0.0.0.0"
   },
+  "release": {
+    "plugins": [
+      [
+        "@semantic-release/github",
+        {
+          "successComment": false
+        }
+      ]
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
