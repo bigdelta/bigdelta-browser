@@ -153,7 +153,7 @@ export class Metrical {
       return;
     }
 
-    const relations = this.getIdentificationRelations()
+    const relations = this.getIdentificationRelations();
     if (!userId) {
       if (!relations?.user_id) {
         return;
