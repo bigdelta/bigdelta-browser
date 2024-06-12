@@ -16,14 +16,16 @@ const CLICK_ID_PARAMS = [
 
 export const getMarketingAttributionParameters = (url: string): Record<string, string> => {
   return {
-    ...getQueryParams(url, UTM_PARAMS),
-    ...getQueryParams(url, CLICK_ID_PARAMS),
+    ...getPropertiesFromQueryParams(url, UTM_PARAMS),
+    ...getPropertiesFromQueryParams(url, CLICK_ID_PARAMS),
   };
 };
 
-const getQueryParams = (url: string, params: string[]): Record<string, string> => {
+const getPropertiesFromQueryParams = (url: string, params: string[]): Record<string, string> => {
   let queryString = url?.split('?')[1];
   return Object.fromEntries(
-    Array.from(new URLSearchParams(queryString).entries()).filter(([key, value]) => params.includes(key)),
+    Array.from(new URLSearchParams(queryString).entries())
+      .filter(([key, value]) => params.includes(key))
+      .map(([key, value]) => [`$${key}`, value]),
   );
 };

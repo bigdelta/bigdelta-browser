@@ -2,10 +2,12 @@ import { ClientState, FullConfig } from '../model/config';
 import { Identification } from '../model/identification';
 import Cookies, { CookieAttributes } from 'js-cookie';
 import { getCookieDomain } from './getCookieDomain';
+import { Session } from '../model/session';
 
 export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
 export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
 export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'metrical_analytics_track_ip_and_geolocation';
+export const SESSION_KEY = 'metrical_analytics_session';
 
 export class PersistentStorage {
   constructor(private config: FullConfig) {}
@@ -60,6 +62,27 @@ export class PersistentStorage {
       trackingEnabled,
       trackIpAndGeolocation,
     };
+  }
+
+  public saveSession(session: Session) {
+    if (!session) {
+      this.remove(SESSION_KEY);
+    } else {
+      this.persist(SESSION_KEY, JSON.stringify(session));
+    }
+  }
+
+  public loadSession(): Session {
+    const session = this.get(SESSION_KEY);
+    if (!session || session.length < 1) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(session);
+    } catch (e) {
+      return null;
+    }
   }
 
   private get(name: string) {
