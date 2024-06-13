@@ -1,7 +1,6 @@
-import {NestedObject} from "./nestedObject";
+import { NestedObject } from './nestedObject';
 
 export type Relations = { [key: string]: string };
-
 
 export type EventPayload = {
   event_name: string;

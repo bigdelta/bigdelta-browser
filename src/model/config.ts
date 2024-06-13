@@ -1,5 +1,10 @@
 export type StorageType = 'cookies' | 'localStorage';
 
+export interface SessionsConfig {
+  enabled: boolean;
+  excludeEvents?: string[];
+}
+
 export interface PageViewsConfig {
   enabled: boolean;
   singlePageAppTracking?: 'path' | 'path-with-query' | 'any' | 'disabled';
@@ -8,6 +13,7 @@ export interface PageViewsConfig {
 export interface DefaultTrackingConfig {
   pageViews?: PageViewsConfig;
   marketingAttribution?: boolean;
+  sessions?: SessionsConfig;
 }
 
 export interface FullConfig {

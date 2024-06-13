@@ -139,6 +139,26 @@ By default, all events, even if identical, are treated as unique and recorded in
 client.track({ event_name: 'My Custom Unique Event', properties: { my_property: 'property_value', $deduplication_id: 'unique_id' }});
 ```
 
+### Sessions
+
+A session is a series of events that capture a single use of your product or a visit to your website. Analyzing sessions allows you to understand user behavior, including entry and exit points, duration of visits, activity, bounce rates, and more.
+
+Metrical automatically computes sessions based on the events you send. This means you don't need to implement any special tracking. Our SDK adds a `session_id` to each event and manage sessions automatically.
+
+Events from the same user, browser, and device share the same `session_id` until there is no activity for more than 30 minutes, after which subsequent events are grouped into a new session. A session can include multiple tabs and windows, as long as they are in the same browser and on the same device. For example, moving from one Tab to another counts as a single session, but switching from one Browser to another starts a new session. You can also create a new session manually by calling `client.reset()`.
+
+Events with the `created_at` property manually set are not included in sessions. Additionally, you can exclude certain events (e.g., actions triggered automatically on behalf of the user) from session calculations, as shown below:
+
+```html
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Event Name'] }}});
+```
+
+If session tracking is not needed, it can be disabled, as shown below:
+
+```html
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { sessions: { enabled: false } }});
+```
+
 ## Identify users & companies
 You can manage user identity through the `client.identify()` and `client.reset()` methods. Utilizing these methods correctly ensures that events are appropriately linked to the user, regardless of their transitions across devices and browsers.
 
