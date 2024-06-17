@@ -52,14 +52,11 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -70,6 +67,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -90,14 +88,11 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -108,6 +103,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -126,14 +122,11 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                user_id: 'user',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -144,6 +137,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { user_id: 'user' } }],
             },
           ],
         }),
@@ -159,17 +153,14 @@ describe('Metrical', () => {
       const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
-      await client.identify({ user_id: 'user' });
+      await client.identify({ user_id: 'user', lead_id: 'lead' });
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -180,6 +171,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -190,26 +182,25 @@ describe('Metrical', () => {
         method: 'POST',
       });
       expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/identify', {
-        body: JSON.stringify([
-          {
-            anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-            user_id: 'user',
-          },
-        ]),
+        body: JSON.stringify({
+          identify: [
+            {
+              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              user_id: 'user',
+            },
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                user_id: 'user',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -220,6 +211,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { user_id: 'user' } }, { id: { lead_id: 'lead' } }],
             },
           ],
         }),
@@ -288,7 +280,7 @@ describe('Metrical', () => {
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -311,9 +303,7 @@ describe('Metrical', () => {
                 $utm_campaign: 'campaign',
                 $gclid: 'id',
               },
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -330,7 +320,7 @@ describe('Metrical', () => {
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -354,9 +344,7 @@ describe('Metrical', () => {
                 $gclid: 'id',
                 my_prop: 'prop_value',
               },
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -376,7 +364,7 @@ describe('Metrical', () => {
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -397,9 +385,7 @@ describe('Metrical', () => {
                 $path: '/path/index.html',
                 $query: '?foo=bar&utm_campaign=campaign&gclid=id',
               },
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -420,14 +406,11 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Page Viewed',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -438,6 +421,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
               track_ip_and_geolocation: false,
             },
           ],
@@ -477,7 +461,7 @@ describe('Metrical', () => {
 
       const sessionId = client.getSessionId();
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -500,10 +484,32 @@ describe('Metrical', () => {
                 $utm_campaign: 'campaign',
                 $gclid: 'id',
               },
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-                session_id: sessionId,
-              },
+              relations: [
+                { id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } },
+                {
+                  id: { session_id: sessionId },
+                  set_once: {
+                    $start_event: 'Page View',
+                    $start_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+                    $start_path: '/path/index.html',
+                    $initial_utm_campaign: 'campaign',
+                    $initial_referring_domain: 'www.google.com',
+                    $initial_gclid: 'id',
+                    $channel_type: 'Paid Search',
+                  },
+                  set: {
+                    $session_start: '2024-01-01T00:00:00.000Z',
+                    $session_end: '2024-01-01T00:30:00.000Z',
+                    $session_duration_seconds: 1800,
+                    $event_count: 1,
+                    $pageview_count: 1,
+                    $is_bounce: true,
+                    $end_event: 'Page View',
+                    $end_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+                    $end_path: '/path/index.html',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -514,47 +520,11 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/session', {
-        body: JSON.stringify({
-          sessions: [
-            {
-              id: sessionId,
-              properties: {
-                $session_start: '2024-01-01T00:00:00.000Z',
-                $session_end: '2024-01-01T00:30:00.000Z',
-                $session_duration_seconds: 1800,
-                $event_count: 1,
-                $pageview_count: 1,
-                $is_bounce: true,
-                $end_event: 'Page View',
-                $end_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-                $end_path: '/path/index.html',
-                $start_event: 'Page View',
-                $start_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
-                $start_path: '/path/index.html',
-                $initial_utm_campaign: 'campaign',
-                $initial_referring_domain: 'www.google.com',
-                $initial_gclid: 'id',
-                $channel_type: 'Paid Search',
-              },
-            },
-          ],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-write-key': 'key',
-        },
-        method: 'POST',
-      });
-
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Excluded Event',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -565,6 +535,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -575,15 +546,12 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Stale Event',
               created_at: '2024-12-31T00:00:00.000Z',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -594,6 +562,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
             },
           ],
         }),
@@ -604,15 +573,11 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(5, 'https://api.metrical.io/v1/ingestion/event', {
+      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
               event_name: 'Included Event',
-              relations: {
-                anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-                session_id: sessionId,
-              },
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -623,6 +588,22 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
+              relations: [
+                { id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } },
+                {
+                  id: { session_id: sessionId },
+                  set_once: {},
+                  set: {
+                    $session_start: '2024-01-01T00:00:00.000Z',
+                    $session_end: '2024-01-01T00:31:00.000Z',
+                    $session_duration_seconds: 1860,
+                    $event_count: 2,
+                    $pageview_count: 1,
+                    $is_bounce: false,
+                    $end_event: 'Included Event',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -632,24 +613,50 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
+    });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(6, 'https://api.metrical.io/v1/ingestion/session', {
-        body: JSON.stringify({
-          sessions: [
-            {
-              id: sessionId,
-              properties: {
-                $session_start: '2024-01-01T00:00:00.000Z',
-                $session_end: '2024-01-01T00:31:00.000Z',
-                $session_duration_seconds: 1860,
-                $event_count: 2,
-                $pageview_count: 1,
-                $is_bounce: false,
-                $end_event: 'Included Event',
-              },
+    it('should return identifier that was set', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      await client.identify({ identifier_key: 'identifier_value' });
+      expect(client.getIdentifier('identifier_key')).toEqual('identifier_value');
+      expect(client.getIdentifier('not_existing_key')).toBeUndefined();
+    });
+
+    it('should set record properties', async () => {
+      const client = new Metrical({ writeKey: 'key' });
+
+      const records = [
+        {
+          id: 'd63506b4-cea0-4fde-9a0e-cb2edee48929',
+          workspace_object_id: 'user',
+          properties: {
+            set: {
+              name: 'user',
             },
-          ],
-        }),
+            set_once: {
+              email: 'user@email.com',
+            },
+          },
+        },
+        {
+          id: 'a1514d79-845e-4e6e-947a-d5151f5ec93c',
+          workspace_object_id: 'account',
+          properties: {
+            set: {
+              title: 'account',
+            },
+            set_once: {
+              owner: 'account@email.com',
+            },
+          },
+        },
+      ];
+
+      await client.setRecordProperties(records);
+
+      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/records', {
+        body: JSON.stringify({ records }),
         headers: {
           'Content-Type': 'application/json',
           'x-write-key': 'key',

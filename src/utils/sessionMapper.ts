@@ -3,7 +3,7 @@ import { EventPayload } from '../model/eventPayload';
 import { DateTime, Interval } from 'luxon';
 import { getChannelType } from './channelType';
 
-export const toSessionPayload = (session: Session, firstEvent: EventPayload, lastEvent: EventPayload) => {
+export const sessionProperties = (session: Session, lastEvent: EventPayload) => {
   return {
     $session_start: session.session_start,
     $session_end: session.session_end,
@@ -21,11 +21,10 @@ export const toSessionPayload = (session: Session, firstEvent: EventPayload, las
     $end_event: lastEvent.event_name,
     $end_location: lastEvent.properties['$location'],
     $end_path: lastEvent.properties['$path'],
-    ...(firstEvent ? newSessionProperties(firstEvent) : {}),
   };
 };
 
-const newSessionProperties = (firstEvent: EventPayload): Record<string, any> => {
+export const initialSessionProperties = (firstEvent: EventPayload): Record<string, any> => {
   return {
     $start_event: firstEvent.event_name,
     $start_location: firstEvent.properties['$location'],
