@@ -38,12 +38,12 @@ This SDK is also available through CDN.
 ```html
 <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/@metrical-io/metrical-browser/dist/index.iife.min.js"></script>
 <script type="text/javascript">
-const client = new Metrical({ writeKey: '<write key>' });
+  const client = new Metrical({ writeKey: '<write key>' });
 </script>
 ```
 
 ## Track behavior
-### Send Event
+### Send event
 You can track an event by calling `client.track()` with the event name and its properties.
 
 ```html
@@ -87,8 +87,8 @@ client.trackEventOnFormSubmit(".newsletter-signup", "Newsletter Signup");
 - **Data Sensitivity**: Be careful not to collect sensitive user information without consent.
 - **Event Naming**: Use clear, consistent event names for easy analysis in Metrical.
 
-### Page Views Tracking
-#### Manual
+### Track page views
+#### Manually
 You can track a page view event by calling `client.trackPageView()`. By default, 'Page View' is used as the event name, and the following properties are recorded:
 - The page title.
 - The page location.
@@ -101,7 +101,7 @@ You can always specify a custom name and add additional properties as shown belo
 ```html
 client.trackPageView({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }}));
 ```
-#### Automatic
+#### Automatically
 Page View events can be tracked automatically on every page load by enabling the `defaultTrackingConfig.pageViews` during client creation (disabled by default), as shown below:
 ```html
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }}});
@@ -123,7 +123,7 @@ const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { 
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
 ```
 
-### Marketing Attribution Tracking
+### Attribute marketing data
 The library will automatically populate Page View events with any UTM parameters (`utm_source`, `utm_campaign`, `utm_medium`, `utm_term`, `utm_content`) or advertising click IDs (`dclid`, `fbclid`, `gbraid`, `gclid`, `ko_click_id`, `li_fat_id`, `msclkid`, `rtd_cid`, `ttclid`, `twclid`, `wbraid`) that are present on the page. 
 
 This default behavior can be turned off by disabling the `defaultTrackingConfig.marketingAttribution` option during client creation, as shown below:
@@ -131,7 +131,7 @@ This default behavior can be turned off by disabling the `defaultTrackingConfig.
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
 ```
 
-### Events Deduplication
+### Ensure idempotence
 
 By default, all events, even if identical, are treated as unique and recorded in the system each time they are sent. However, you can specify a special property, `$deduplication_id` (of type `string`), to assign a unique identifier to an event. It allows deduplication of events that are accidentally sent multiple times. All subsequent events with the same `$deduplication_id` will be ignored and not recorded in the system.
 
@@ -139,7 +139,7 @@ By default, all events, even if identical, are treated as unique and recorded in
 client.track({ event_name: 'My Custom Unique Event', properties: { my_property: 'property_value', $deduplication_id: 'unique_id' }});
 ```
 
-### Sessions
+### Track sessions
 
 A session is a series of events that capture a single use of your product or a visit to your website. Analyzing sessions allows you to understand user behavior, including entry and exit points, duration of visits, activity, bounce rates, and more.
 
@@ -159,6 +159,21 @@ If session tracking is not needed, it can be disabled, as shown below:
 const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { sessions: { enabled: false } }});
 ```
 
+### Manage relations
+Metrical automatically manages relationships between anonymous and identified users during tracking. However, if your events are related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
+```html
+client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ id: { invoice_id: '63f2164c-2000-4f6c-b377-107368566222'}}]});
+```
+
+### Set related record properties
+If a certain event is supposed to change related record properties, you can easily do that using the `set` and `set_once` parameters when specifying relations, as shown below:
+
+```html
+// `set` - sets the value if it was never set before, or overrides the latest value if one exists.
+// `set_once` - sets the value if it was never set before or ignores it otherwise.
+client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ id: { invoice_id: '63f2164c-2000-4f6c-b377-107368566222' }, set: { 'coupon': 'PROMO10' }, set_once: { 'invoice_no': 'IN001' }}]});
+```
+
 ## Identify users & companies
 You can manage user identity through the `client.identify()` and `client.reset()` methods. Utilizing these methods correctly ensures that events are appropriately linked to the user, regardless of their transitions across devices and browsers.
 
@@ -169,6 +184,14 @@ You can identify a user with a unique ID to monitor their activity across device
 client.identify({ user_id: '<user id>' });
 ```
 
+### Get identifier
+Identifiers provided via `client.identify()` are persisted and can be accessed later using `client.getIdentifier()`, as shown below:
+
+```html
+client.identify({ invoice_id: '<invoice id>' });
+client.getIdentifier('invoice_id'); // returns <invoice id>
+```
+
 ### Reset
 When your users logout you can trigger a reset method which will help reset the user identity. We’ll disassociate all future tracked events from the currently identified user.
 
@@ -176,7 +199,67 @@ When your users logout you can trigger a reset method which will help reset the 
 client.reset();
 ```
 
-### Persistent Storage
+### Set record properties
+Related record properties could be set when tracking, [as described here](#set-related-record-properties). However, if you need to set properties separately from the event or manage records that are not related to the event, you can use `client.setRecordProperties()`, as shown below:
+
+```html
+client.setRecordProperties([
+{
+  id: 'd63506b4-cea0-4fde-9a0e-cb2edee48929',
+  workspace_object_id: 'user',
+  properties: {
+    set: {
+      name: 'user',
+    },
+    set_once: {
+      email: 'user@email.com',
+    },
+  },
+},
+{
+  id: client.getIdentifier('account_id'),
+  workspace_object_id: 'account',
+  properties: {
+    set: {
+      title: 'account',
+    },
+    set_once: {
+      owner: 'account@email.com',
+    },
+  },
+}]);
+```
+
+## Protect user data with Metrical
+
+Metrical prioritizes user privacy while providing flexibility in data collection. By default, Metrical is configured to transmit tracking data, but you have options to control this behavior.
+
+### Disable tracking
+
+To prioritize user privacy, you can proactively disable tracking during initialization of the Metrical client. Set the `disableTrackingByDefault` property to `true`:
+
+```javascript
+const client = new Metrical({ writeKey: '<write key>', disableTrackingByDefault: true });
+```
+
+### Dynamically toggle tracking
+
+Metrical client allows you to dynamically manage tracking based on user preferences or specific scenarios. Use the following methods:
+
+- `client.enableTracking()` activates the transmission of tracking data (this is the default state).
+- `client.disableTracking()` deactivates the transmission of tracking data.
+
+### Control IP address and geolocation tracking
+For more precise control over user privacy, Metrical offers the option to specifically toggle the tracking of IP address and geolocation information. Use the `trackIpAndGeolocation` property during initialization:
+
+```javascript
+const client = new Metrical({ 
+    writeKey: '<write key>', 
+    trackIpAndGeolocation: false  // Disable IP and geolocation tracking
+});
+```
+
+## Choose persistent storage
 By default, cookies with a localStorage fallback are used to store state in the browser. You can control this behavior with the `storageType` option, as shown below:
 
 ```html
@@ -185,33 +268,4 @@ const client = new Metrical({ writeKey: '<write key>', storageType: 'cookies'});
 
 // Use localStorage explicitly.
 const client = new Metrical({ writeKey: '<write key>', storageType: 'localStorage'});
-```
-
-## Protecting user data with Metrical
-
-Metrical prioritizes user privacy while providing flexibility in data collection. By default, Metrical is configured to transmit tracking data, but you have options to control this behavior.
-
-### Disabling tracking
-
-To prioritize user privacy, you can proactively disable tracking during initialization of the Metrical client. Set the `disableTrackingByDefault` property to `true`:
-
-```javascript
-const client = new Metrical({ writeKey: '<write key>', disableTrackingByDefault: true });
-```
-
-### Dynamically toggling tracking
-
-Metrical client allows you to dynamically manage tracking based on user preferences or specific scenarios. Use the following methods:
-
-- `client.enableTracking()` activates the transmission of tracking data (this is the default state).
-- `client.disableTracking()` deactivates the transmission of tracking data.
-
-### Controlling IP Address and Geolocation Tracking
-For more precise control over user privacy, Metrical offers the option to specifically toggle the tracking of IP address and geolocation information. Use the `trackIpAndGeolocation` property during initialization:
-
-```javascript
-const client = new Metrical({ 
-    writeKey: '<write key>', 
-    trackIpAndGeolocation: false  // Disable IP and geolocation tracking
-});
 ```

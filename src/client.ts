@@ -1,4 +1,4 @@
-import { EventPayload, PageViewEventPayload, Relations } from './model/eventPayload';
+import { EventPayload, PageViewEventPayload, Relation } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
 import { ClientState, Config, DefaultTrackingConfig, FullConfig, SessionsConfig } from './model/config';
@@ -9,13 +9,19 @@ import { FormTracker } from './formTracker';
 import { NestedObject } from './model/nestedObject';
 import { Session } from './model/session';
 import { DateTime } from 'luxon';
-import { toSessionPayload } from './utils/sessionMapper';
+import { initialSessionProperties, sessionProperties } from './utils/sessionMapper';
+import { SetRecordProperties } from './model/record';
 
 const PAGE_VIEW_EVENT_NAME = 'Page View';
 
 interface PageContext {
   location: Location;
   document: Document;
+}
+
+interface SessionInfo {
+  shouldTrack: boolean;
+  isNew?: boolean;
 }
 
 export class Metrical {
@@ -54,7 +60,6 @@ export class Metrical {
 
     try {
       this.assertConfig();
-      const sessionInfo = this.tryUpdateSessionState(events);
 
       const browserWithVersion = window ? getBrowserWithVersion(window.navigator.userAgent) : undefined;
       const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
@@ -62,15 +67,8 @@ export class Metrical {
       const referrer = document ? document.referrer : undefined;
       const referringDomain = this.parseReferringDomain(referrer);
 
-      const finalEvents = events.map((event) => ({
+      const eventsWithProperties = events.map((event) => ({
         ...event,
-        relations: {
-          ...this.getIdentificationRelations(),
-          ...(event.relations || {}),
-          ...(sessionInfo.shouldTrack && this.isInSessionScope(event, this.config.defaultTrackingConfig.sessions)
-            ? { session_id: this.session.id }
-            : {}),
-        },
         properties: {
           $screen_height: window ? window.screen.height : undefined,
           $screen_width: window ? window.screen.width : undefined,
@@ -82,6 +80,29 @@ export class Metrical {
           $browser_version: browserWithVersion?.version,
           ...(event.properties || {}),
         },
+      }));
+
+      const sessionInfo = this.tryUpdateSessionState(events);
+      const [initialSessionProperties, sessionProperties] = this.getSessionProperties(
+        sessionInfo,
+        eventsWithProperties,
+      );
+
+      const finalEvents = eventsWithProperties.map((event) => ({
+        ...event,
+        relations: [
+          ...this.getIdentificationRelations(),
+          ...(sessionInfo.shouldTrack && this.isInSessionScope(event, this.config.defaultTrackingConfig.sessions)
+            ? [
+                {
+                  id: { session_id: this.session.id },
+                  set_once: { ...initialSessionProperties },
+                  set: { ...sessionProperties },
+                },
+              ]
+            : []),
+          ...(event.relations || []),
+        ],
         ...(this.clientState.trackIpAndGeolocation === false
           ? {
               track_ip_and_geolocation: this.clientState.trackIpAndGeolocation,
@@ -89,7 +110,7 @@ export class Metrical {
           : {}),
       }));
 
-      await fetch(`${this.config.baseURL}/v1/ingestion/event`, {
+      await fetch(`${this.config.baseURL}/v1/ingestion/events`, {
         ...this.config.requestConfig,
         ...config,
         method: 'POST',
@@ -103,63 +124,9 @@ export class Metrical {
           events: finalEvents,
         }),
       });
-
-      if (sessionInfo.shouldTrack) {
-        const eligibleEvents = finalEvents.filter((e) =>
-          this.isInSessionScope(e, this.config.defaultTrackingConfig.sessions),
-        );
-        const firstEvent = eligibleEvents[0];
-        const lastEvent = eligibleEvents[eligibleEvents.length - 1];
-        const sessionPayload = toSessionPayload(this.session, sessionInfo.isNew ? firstEvent : null, lastEvent);
-        await this.setSessionPropertiesCallout(this.session.id, sessionPayload, this.config.requestConfig);
-      }
     } catch (e) {
       console.warn('Error occurred when making track call', e);
     }
-  }
-
-  private tryUpdateSessionState(events: EventPayload[]) {
-    const sessionsConfig = this.config.defaultTrackingConfig.sessions;
-
-    if (!sessionsConfig || sessionsConfig.enabled) {
-      const eligibleEvents = events.filter((e) => this.isInSessionScope(e, sessionsConfig));
-
-      if (eligibleEvents.length === 0) {
-        return { shouldTrack: false };
-      }
-
-      const currentBatchEventCount = eligibleEvents.length;
-      const currentBatchPageViewCount = eligibleEvents.filter((e) => e.event_name === PAGE_VIEW_EVENT_NAME).length;
-
-      const now = DateTime.now().toUTC();
-
-      if (this.session && now.toISO() < this.session.session_end) {
-        this.session = {
-          ...this.session,
-          session_end: now.plus({ minute: 30 }).toISO(),
-          event_count: this.session.event_count + currentBatchEventCount,
-          pageview_count: this.session.pageview_count + currentBatchPageViewCount,
-        };
-        this.persistentStorage.saveSession(this.session);
-        return { shouldTrack: true, isNew: false };
-      } else {
-        this.session = {
-          id: uuid(),
-          session_start: now.toISO(),
-          session_end: now.plus({ minute: 30 }).toISO(),
-          event_count: currentBatchEventCount,
-          pageview_count: currentBatchPageViewCount,
-        };
-        this.persistentStorage.saveSession(this.session);
-        return { shouldTrack: true, isNew: true };
-      }
-    }
-
-    return { shouldTrack: false };
-  }
-
-  private isInSessionScope(event: EventPayload, sessionsConfig?: SessionsConfig) {
-    return !event.created_at && !(sessionsConfig?.excludeEvents || []).includes(event.event_name);
   }
 
   public async trackPageView(payload?: PageViewEventPayload) {
@@ -218,20 +185,16 @@ export class Metrical {
     this.persistentStorage.saveIdentification(this.identification);
   }
 
-  public async setUserProperties(properties: NestedObject, userId?: string, config?: RequestInit) {
-    if (!this.clientState.trackingEnabled) {
+  public getIdentifier(key: string) {
+    return this.identification ? this.identification[key] : undefined;
+  }
+
+  public async setRecordProperties(records: SetRecordProperties | SetRecordProperties[], config?: RequestInit) {
+    if (!records || !this.clientState.trackingEnabled) {
       return;
     }
 
-    const relations = this.getIdentificationRelations();
-    if (!userId) {
-      if (!relations?.user_id) {
-        return;
-      }
-      userId = relations.user_id;
-    }
-
-    await this.setUserPropertiesCallout(userId, properties, config);
+    await this.setRecordPropertiesCallout(Array.isArray(records) ? records : [records], config);
   }
 
   public async reset() {
@@ -257,6 +220,64 @@ export class Metrical {
 
   public getSessionId() {
     return this.session?.id;
+  }
+
+  private tryUpdateSessionState(events: EventPayload[]): SessionInfo {
+    const sessionsConfig = this.config.defaultTrackingConfig.sessions;
+
+    if (!sessionsConfig || sessionsConfig.enabled) {
+      const eligibleEvents = events.filter((e) => this.isInSessionScope(e, sessionsConfig));
+
+      if (eligibleEvents.length === 0) {
+        return { shouldTrack: false };
+      }
+
+      const currentBatchEventCount = eligibleEvents.length;
+      const currentBatchPageViewCount = eligibleEvents.filter((e) => e.event_name === PAGE_VIEW_EVENT_NAME).length;
+
+      const now = DateTime.now().toUTC();
+
+      if (this.session && now.toISO() < this.session.session_end) {
+        this.session = {
+          ...this.session,
+          session_end: now.plus({ minute: 30 }).toISO(),
+          event_count: this.session.event_count + currentBatchEventCount,
+          pageview_count: this.session.pageview_count + currentBatchPageViewCount,
+        };
+        this.persistentStorage.saveSession(this.session);
+        return { shouldTrack: true, isNew: false };
+      } else {
+        this.session = {
+          id: uuid(),
+          session_start: now.toISO(),
+          session_end: now.plus({ minute: 30 }).toISO(),
+          event_count: currentBatchEventCount,
+          pageview_count: currentBatchPageViewCount,
+        };
+        this.persistentStorage.saveSession(this.session);
+        return { shouldTrack: true, isNew: true };
+      }
+    }
+
+    return { shouldTrack: false };
+  }
+
+  private isInSessionScope(event: EventPayload, sessionsConfig?: SessionsConfig) {
+    return !event.created_at && !(sessionsConfig?.excludeEvents || []).includes(event.event_name);
+  }
+
+  private getSessionProperties(sessionInfo: SessionInfo, events: EventPayload[]) {
+    if (sessionInfo.shouldTrack) {
+      const eligibleEvents = events.filter((e) => this.isInSessionScope(e, this.config.defaultTrackingConfig.sessions));
+      const firstEvent = eligibleEvents[0];
+      const lastEvent = eligibleEvents[eligibleEvents.length - 1];
+
+      return [
+        sessionInfo.isNew ? initialSessionProperties(firstEvent) : {},
+        sessionProperties(this.session, lastEvent),
+      ];
+    }
+    return [{}, {}];
   }
 
   private async trackPageViewOf(pageContext: PageContext, payload?: PageViewEventPayload) {
@@ -300,22 +321,22 @@ export class Metrical {
           'x-write-key': this.config.writeKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify([{ anonymous_id: anonymousId, user_id: userId }]),
+        body: JSON.stringify({ identify: [{ anonymous_id: anonymousId, user_id: userId }] }),
       });
     } catch (e) {
       console.warn('Error occurred when making identify call', e);
     }
   }
 
-  private async setUserPropertiesCallout(userId: string, properties: NestedObject, config?: RequestInit) {
+  private async setRecordPropertiesCallout(records: SetRecordProperties[], config?: RequestInit) {
     try {
-      if (!userId) {
+      if (!records || records.length === 0) {
         return;
       }
 
       this.assertConfig();
 
-      await fetch(`${this.config.baseURL}/v1/ingestion/user`, {
+      await fetch(`${this.config.baseURL}/v1/ingestion/records`, {
         ...this.config.requestConfig,
         ...config,
         method: 'POST',
@@ -325,39 +346,14 @@ export class Metrical {
           'x-write-key': this.config.writeKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ users: [{ id: userId, properties }] }),
+        body: JSON.stringify({ records }),
       });
     } catch (e) {
-      console.warn('Error occurred when making ingest user call', e);
+      console.warn('Error occurred when making ingest record call', e);
     }
   }
 
-  private async setSessionPropertiesCallout(sessionId: string, properties: NestedObject, config?: RequestInit) {
-    try {
-      if (!sessionId) {
-        return;
-      }
-
-      this.assertConfig();
-
-      await fetch(`${this.config.baseURL}/v1/ingestion/session`, {
-        ...this.config.requestConfig,
-        ...config,
-        method: 'POST',
-        headers: {
-          ...this.config.requestConfig?.headers,
-          ...config?.headers,
-          'x-write-key': this.config.writeKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessions: [{ id: sessionId, properties }] }),
-      });
-    } catch (e) {
-      console.warn('Error occurred when making ingest session call', e);
-    }
-  }
-
-  private getIdentificationRelations(): Relations {
+  private getIdentificationRelations(): Relation[] {
     if (!this.identification) {
       this.identification = {
         anonymous_id: uuid(),
@@ -366,7 +362,9 @@ export class Metrical {
       this.persistentStorage.saveIdentification(this.identification);
     }
 
-    return this.identification;
+    return Object.entries(this.identification).map(([key, value]) => {
+      return { id: { [key]: value } };
+    });
   }
 
   private setState(clientState: ClientState) {
