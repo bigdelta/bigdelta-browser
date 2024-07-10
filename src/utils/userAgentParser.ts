@@ -56,11 +56,10 @@ export const getOperatingSystem = async (userAgent: string) => {
 
   try {
     if (/Windows NT/.test(userAgent)) {
-      let version = ""
+      let version = '';
       try {
         version = userAgent.match(/Windows NT (\d+\.\d+)/)[1];
-      } catch {
-      }
+      } catch {}
       if (version === '10.0') {
         if (navigator.userAgentData) {
           try {
@@ -85,25 +84,25 @@ export const getOperatingSystem = async (userAgent: string) => {
       else if (version === '5.1') osName = 'Windows XP';
       else osName = 'Windows';
     } else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-      osName = 'iOS'
+      osName = 'iOS';
       if (/OS (\d+[_\.\d]+)/.test(userAgent)) {
-        const matches = userAgent.match(/OS (\d+[_\.\d]+)/)
+        const matches = userAgent.match(/OS (\d+[_\.\d]+)/);
         if (matches.length >= 1) {
           osName = 'iOS ' + matches[1].replace(/_/g, '.');
         }
       }
     } else if (/Mac OS X/.test(userAgent)) {
-      osName = 'Mac OS X'
+      osName = 'Mac OS X';
       if (/Mac OS X (\d+[_\.\d]+)/.test(userAgent)) {
-        const matches = userAgent.match(/Mac OS X (\d+[_\.\d]+)/)
+        const matches = userAgent.match(/Mac OS X (\d+[_\.\d]+)/);
         if (matches.length >= 1) {
           osName = 'Mac OS X ' + matches[1].replace(/_/g, '.');
         }
       }
     } else if (/Android/.test(userAgent)) {
-      osName = 'Android'
+      osName = 'Android';
       if (/Android (\d+\.\d+)/.test(userAgent)) {
-        const matches = userAgent.match(/Android (\d+\.\d+)/)
+        const matches = userAgent.match(/Android (\d+\.\d+)/);
         if (matches.length >= 1) {
           osName = 'Android ' + matches[1];
         }

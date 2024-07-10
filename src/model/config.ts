@@ -10,8 +10,15 @@ export interface PageViewsConfig {
   singlePageAppTracking?: 'path' | 'path-with-query' | 'any' | 'disabled';
 }
 
+export interface FormsConfig {
+  enabled: boolean;
+  excludedFormIds?: string[];
+  excludedInputFieldNames?: string[];
+}
+
 export interface DefaultTrackingConfig {
   pageViews?: PageViewsConfig;
+  forms?: FormsConfig;
   marketingAttribution?: boolean;
   sessions?: SessionsConfig;
 }
