@@ -65,27 +65,27 @@ All events are sent via HTTPS.
 
 ### Track form submissions
 
-This function automates the process of tracking form submissions and sending them to Metrical as custom events.
+Form submissions can be automatically tracked by enabling the `defaultTrackingConfig.forms` during client creation (disabled by default), as shown below:
+```html
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { forms: { enabled: true }}});
+```
 
-Form data is attached to the tracked event as properties.
+No additional code is needed to capture form submissions. Metrical takes care of it automatically. This applies to both single-page applications and traditional websites.
 
-#### Parameters
-- **selector (string, required)**: A CSS selector that identifies the form(s) you want to track (e.g., #contact-form, .newsletter-signup).
-- **eventName (string, required)**: The name for the event in Metrical when a form is submitted (e.g., "Contact Form Submission").
+The form data is included as properties in the tracked event.
 
-#### Usage
+By default, all forms and their input fields are tracked, except those with the `type="password"`. You can customize this behavior using the `defaultTrackingConfig.forms.excludedFormIds` and `defaultTrackingConfig.forms.excludedInputFieldNames` options, as shown below:
 
-```javascript
-// Track contact form submissions
-client.trackEventOnFormSubmit("#contact-form", "Contact Form Submission");
+```html
+// Track all forms except the one with the ID 'my-sensitive-form'.
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { forms: { enabled: true, excludedFormIds: ['my-sensitive-form'] }}});
 
-// Track newsletter signups
-client.trackEventOnFormSubmit(".newsletter-signup", "Newsletter Signup");
+// Track all input fields except the one with the name 'my-sensitive-field'. 
+const client = new Metrical({ writeKey: '<write key>', defaultTrackingConfig: { forms: { enabled: true, excludedInputFieldNames: ['my-sensitive-field'] }}});
 ```
 
 #### Important Notes
 - **Data Sensitivity**: Be careful not to collect sensitive user information without consent.
-- **Event Naming**: Use clear, consistent event names for easy analysis in Metrical.
 
 ### Track page views
 #### Manually

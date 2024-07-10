@@ -1,12 +1,19 @@
 import { EventPayload, PageViewEventPayload, Relation } from './model/eventPayload';
 import { Identification } from './model/identification';
 import { v4 as uuid } from 'uuid';
-import { ClientState, Config, DefaultTrackingConfig, FullConfig, SessionsConfig } from './model/config';
+import {
+  ClientState,
+  Config,
+  DefaultTrackingConfig,
+  FormsConfig,
+  FullConfig,
+  PageViewsConfig,
+  SessionsConfig,
+} from './model/config';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
-import { FormTracker } from './formTracker';
-import { NestedObject } from './model/nestedObject';
+import { FormTracker } from './utils/formTracker';
 import { Session } from './model/session';
 import { DateTime } from 'luxon';
 import { initialSessionProperties, sessionProperties } from './utils/sessionMapper';
@@ -131,31 +138,6 @@ export class Metrical {
 
   public async trackPageView(payload?: PageViewEventPayload) {
     return await this.trackPageViewOf(currentPageContext(), payload);
-  }
-
-  public trackEventOnFormSubmit(selector: string, eventName: string) {
-    const formTracker = new FormTracker(selector, async (form, callback) => {
-      try {
-        const formData = new FormData(form);
-        const formEntries = Array.from(formData.entries());
-        const stringEntries: [string, string][] = formEntries
-          .filter(([_, value]) => typeof value === 'string')
-          .map(([key, value]) => [key, value.toString()]);
-
-        const properties = Object.fromEntries(stringEntries);
-
-        await this.track({
-          event_name: eventName,
-          properties,
-        });
-      } catch (e) {
-        console.log('Error tracking form submit', e);
-      }
-
-      callback();
-    });
-
-    formTracker.init();
   }
 
   public async identify(identification: Identification, config?: RequestInit) {
@@ -378,65 +360,85 @@ export class Metrical {
     }
 
     if (config?.pageViews?.enabled) {
-      const pageContext = currentPageContext();
-      await this.trackPageViewOf(pageContext);
-      let lastUrlTracked = pageContext.location.href;
-
-      if (config?.pageViews?.singlePageAppTracking !== 'disabled') {
-        window.addEventListener('popstate', function () {
-          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
-        });
-
-        window.addEventListener('hashchange', function () {
-          window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
-        });
-
-        const nativePushState = window.history.pushState;
-        if (typeof nativePushState === 'function') {
-          window.history.pushState = function (state, unused, url) {
-            nativePushState.call(window.history, state, unused, url);
-            window.dispatchEvent(
-              new CustomEvent('metrical_location_change', {
-                detail: currentPageContext(),
-              }),
-            );
-          };
-        }
-
-        const nativeReplaceState = window.history.replaceState;
-        if (typeof nativeReplaceState === 'function') {
-          window.history.replaceState = function (state, unused, url) {
-            nativeReplaceState.call(window.history, state, unused, url);
-            window.dispatchEvent(
-              new CustomEvent('metrical_location_change', {
-                detail: currentPageContext(),
-              }),
-            );
-          };
-        }
-
-        window.addEventListener(
-          'metrical_location_change',
-          async function (event: CustomEvent<PageContext>) {
-            const trackedUrl = event.detail.location.href;
-
-            let track = false;
-            if (!config?.pageViews?.singlePageAppTracking || config?.pageViews?.singlePageAppTracking === 'any') {
-              track = trackedUrl !== lastUrlTracked;
-            } else if (config?.pageViews?.singlePageAppTracking === 'path-with-query') {
-              track = trackedUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
-            } else if (config?.pageViews?.singlePageAppTracking === 'path') {
-              track = trackedUrl.split('#')[0].split('?')[0] !== lastUrlTracked.split('#')[0].split('?')[0];
-            }
-
-            if (track) {
-              await this.trackPageView();
-              lastUrlTracked = trackedUrl;
-            }
-          }.bind(this),
-        );
-      }
+      await this.initPageViewsTracking(config?.pageViews);
     }
+
+    if (config?.forms?.enabled) {
+      this.initFormsTracking(config?.forms);
+    }
+  }
+
+  private async initPageViewsTracking(config: PageViewsConfig) {
+    const pageContext = currentPageContext();
+    await this.trackPageViewOf(pageContext);
+    let lastUrlTracked = pageContext.location.href;
+
+    if (config?.singlePageAppTracking !== 'disabled') {
+      window.addEventListener('popstate', function () {
+        window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
+      });
+
+      window.addEventListener('hashchange', function () {
+        window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
+      });
+
+      const nativePushState = window.history.pushState;
+      if (typeof nativePushState === 'function') {
+        window.history.pushState = function (state, unused, url) {
+          nativePushState.call(window.history, state, unused, url);
+          window.dispatchEvent(
+            new CustomEvent('metrical_location_change', {
+              detail: currentPageContext(),
+            }),
+          );
+        };
+      }
+
+      const nativeReplaceState = window.history.replaceState;
+      if (typeof nativeReplaceState === 'function') {
+        window.history.replaceState = function (state, unused, url) {
+          nativeReplaceState.call(window.history, state, unused, url);
+          window.dispatchEvent(
+            new CustomEvent('metrical_location_change', {
+              detail: currentPageContext(),
+            }),
+          );
+        };
+      }
+
+      window.addEventListener(
+        'metrical_location_change',
+        async function (event: CustomEvent<PageContext>) {
+          const trackedUrl = event.detail.location.href;
+
+          let track = false;
+          if (!config?.singlePageAppTracking || config?.singlePageAppTracking === 'any') {
+            track = trackedUrl !== lastUrlTracked;
+          } else if (config?.singlePageAppTracking === 'path-with-query') {
+            track = trackedUrl.split('#')[0] !== lastUrlTracked.split('#')[0];
+          } else if (config?.singlePageAppTracking === 'path') {
+            track = trackedUrl.split('#')[0].split('?')[0] !== lastUrlTracked.split('#')[0].split('?')[0];
+          }
+
+          if (track) {
+            await this.trackPageView();
+            lastUrlTracked = trackedUrl;
+          }
+        }.bind(this),
+      );
+    }
+  }
+
+  private initFormsTracking(config: FormsConfig) {
+    new FormTracker(
+      config?.excludedFormIds || [],
+      config?.excludedInputFieldNames || [],
+      async (formId: string, formData: Record<string, string>) =>
+        await this.track({
+          event_name: 'Form Submitted',
+          properties: formData,
+        }),
+    ).init();
   }
 
   private assertConfig() {
