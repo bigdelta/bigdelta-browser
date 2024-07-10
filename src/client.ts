@@ -11,7 +11,7 @@ import {
   SessionsConfig,
 } from './model/config';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
-import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
+import { getBrowserWithVersion, getDeviceType, getOperatingSystem, isBotUserAgent } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
 import { FormTracker } from './utils/formTracker';
 import { Session } from './model/session';
@@ -50,6 +50,10 @@ export class Metrical {
     this.clientState = this.persistentStorage.loadClientState();
     this.identification = this.persistentStorage.loadIdentification();
     this.session = this.persistentStorage.loadSession();
+
+    if (isBotUserAgent(window.navigator.userAgent)) {
+      this.disableTracking();
+    }
 
     this.initDefaultTracking(config.defaultTrackingConfig);
   }

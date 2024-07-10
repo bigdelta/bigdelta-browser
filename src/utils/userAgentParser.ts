@@ -124,3 +124,31 @@ export const getDeviceType = (userAgent: string) => {
     return 'Desktop';
   }
 };
+
+const KNOWN_BOT_USER_AGENTS = [
+  'ahrefsbot',
+  'baiduspider',
+  'bingbot',
+  'bingpreview',
+  'facebookexternal',
+  'petalbot',
+  'pinterest',
+  'screaming frog',
+  'yahoo! slurp',
+  'yandexbot',
+  'adsbot-google',
+  'apis-google',
+  'duplexweb-google',
+  'feedfetcher-google',
+  'google favicon',
+  'google web preview',
+  'google-read-aloud',
+  'googlebot',
+  'googleweblight',
+  'mediapartners-google',
+  'storebot-google',
+];
+
+export const isBotUserAgent = (userAgent: string) => {
+  return KNOWN_BOT_USER_AGENTS.some((botUserAgent) => userAgent.toLowerCase().includes(botUserAgent));
+};
