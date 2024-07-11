@@ -59,19 +59,35 @@ export class FormTracker {
 
     let eventHandlerCalled = false;
 
-    htmlFormElement.addEventListener('submit', async (evt: SubmitEvent) => {
-      if (eventHandlerCalled) {
-        return;
-      }
+    htmlFormElement.addEventListener(
+      'submit',
+      async (evt: SubmitEvent) => {
+        if (eventHandlerCalled) {
+          return;
+        }
 
-      eventHandlerCalled = true;
+        eventHandlerCalled = true;
 
-      evt.preventDefault();
-      evt.stopPropagation();
+        if (typeof htmlFormElement.requestSubmit === 'function') {
+          evt.preventDefault();
+          evt.stopPropagation();
 
-      await this.handleFormSubmitted(htmlFormElement);
-      htmlFormElement.submit();
-    });
+          await this.handleFormSubmitted(htmlFormElement);
+
+          const submitter = htmlFormElement.querySelector('button[type=submit]');
+          setTimeout(() => {
+            if (submitter) {
+              htmlFormElement.requestSubmit(submitter as HTMLElement);
+            } else {
+              htmlFormElement.requestSubmit();
+            }
+          }, 0);
+        } else {
+          await this.handleFormSubmitted(htmlFormElement);
+        }
+      },
+      { capture: true },
+    );
   }
 
   private async handleFormSubmitted(form: HTMLFormElement) {

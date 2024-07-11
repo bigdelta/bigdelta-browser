@@ -141,7 +141,7 @@ export class Metrical {
   }
 
   public async trackPageView(payload?: PageViewEventPayload) {
-    return await this.trackPageViewOf(currentPageContext(), payload);
+    return await this.trackWithPageContext(currentPageContext(), payload);
   }
 
   public async identify(identification: Identification, config?: RequestInit) {
@@ -266,7 +266,7 @@ export class Metrical {
     return [{}, {}];
   }
 
-  private async trackPageViewOf(pageContext: PageContext, payload?: PageViewEventPayload) {
+  private async trackWithPageContext(pageContext: PageContext, payload?: PageViewEventPayload) {
     const isAttributionEnabled =
       this.config?.defaultTrackingConfig?.marketingAttribution === undefined ||
       this.config?.defaultTrackingConfig?.marketingAttribution;
@@ -374,7 +374,7 @@ export class Metrical {
 
   private async initPageViewsTracking(config: PageViewsConfig) {
     const pageContext = currentPageContext();
-    await this.trackPageViewOf(pageContext);
+    await this.trackWithPageContext(pageContext);
     let lastUrlTracked = pageContext.location.href;
 
     if (config?.singlePageAppTracking !== 'disabled') {
@@ -438,7 +438,7 @@ export class Metrical {
       config?.excludedFormIds || [],
       config?.excludedInputFieldNames || [],
       async (formId: string, formData: Record<string, string>) =>
-        await this.track({
+        await this.trackWithPageContext(currentPageContext(), {
           event_name: 'Form Submitted',
           properties: formData,
         }),
