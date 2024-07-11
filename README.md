@@ -174,6 +174,20 @@ If a certain event is supposed to change related record properties, you can easi
 client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ id: { invoice_id: '63f2164c-2000-4f6c-b377-107368566222' }, set: { 'coupon': 'PROMO10' }, set_once: { 'invoice_no': 'IN001' }}]});
 ```
 
+### Exclude bot traffic
+
+By default, well-known bots are filtered out by the Metrical SDK. However, there may be instances where specific bots not included in the default filter are hitting your site and affecting your data. If you notice such behavior, you can identify a common pattern in the user agent and disable tracking for these bots using the Metrical SDK.
+
+Here’s how you can disable tracking for a specific bot:
+
+```html
+if (window.navigator.userAgent.toLowerCase().includes('specificbot')) {
+    client.disableTracking();
+}
+```
+
+In this example, if the user agent string contains 'specificbot', tracking is disabled by calling `client.disableTracking()`. This ensures that data from these specific bots does not affect your analytics.
+
 ## Identify users & companies
 You can manage user identity through the `client.identify()` and `client.reset()` methods. Utilizing these methods correctly ensures that events are appropriately linked to the user, regardless of their transitions across devices and browsers.
 
