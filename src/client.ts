@@ -41,7 +41,7 @@ export class Metrical {
 
   constructor(config: Config) {
     this.config = {
-      baseURL: config.baseURL || 'https://api.metrical.io',
+      baseURL: config.baseURL || 'https://eu.api.metrical.io',
       defaultTrackingConfig: config.defaultTrackingConfig || {},
       ...config,
     };

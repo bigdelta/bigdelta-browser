@@ -53,7 +53,7 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -123,7 +123,7 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -157,7 +157,7 @@ describe('Metrical', () => {
       await client.identify({ user_id: 'user', lead_id: 'lead' });
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -182,7 +182,7 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/identify', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.metrical.io/v1/ingestion/identify', {
         body: JSON.stringify({
           identify: [
             {
@@ -197,7 +197,7 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -281,7 +281,7 @@ describe('Metrical', () => {
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -321,7 +321,7 @@ describe('Metrical', () => {
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -365,7 +365,7 @@ describe('Metrical', () => {
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -407,7 +407,7 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -462,7 +462,7 @@ describe('Metrical', () => {
 
       const sessionId = client.getSessionId();
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -521,7 +521,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -547,7 +547,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -574,7 +574,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.metrical.io/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -656,7 +656,7 @@ describe('Metrical', () => {
 
       await client.setRecordProperties(records);
 
-      expect(global.fetch).toHaveBeenCalledWith('https://api.metrical.io/v1/ingestion/records', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/records', {
         body: JSON.stringify({ records }),
         headers: {
           'Content-Type': 'application/json',
