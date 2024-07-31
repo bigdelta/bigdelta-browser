@@ -440,7 +440,7 @@ export class Metrical {
       async (formId: string, formData: Record<string, string>) =>
         await this.trackWithPageContext(currentPageContext(), {
           event_name: 'Form Submitted',
-          properties: formData,
+          properties:  { $form_data: formData, $form_id: formId },
         }),
     ).init();
   }
