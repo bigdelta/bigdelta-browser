@@ -7,7 +7,20 @@ declare global {
   }
 }
 
-window.metricalClient = new Metrical({ baseURL: 'http://localhost:8080', writeKey: 'test' });
+window.metricalClient = new Metrical({
+  baseURL: 'http://localhost:8080',
+  sdkKey: 'testKey',
+  defaultTrackingConfig: {
+    pageViews: {
+      enabled: true,
+      singlePageAppTracking: 'any',
+    },
+    forms: {
+      enabled: true,
+    },
+  },
+});
+
 window.addForm = () => {
   const form = document.createElement('form');
   form.id = 'some-form';

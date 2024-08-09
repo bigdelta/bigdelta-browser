@@ -25,7 +25,7 @@ export interface DefaultTrackingConfig {
 
 export interface FullConfig {
   baseURL: string;
-  writeKey: string;
+  sdkKey: string;
   defaultTrackingConfig: DefaultTrackingConfig;
   requestConfig?: RequestInit;
   cookieDomain?: string;
@@ -36,7 +36,7 @@ export interface FullConfig {
 
 export interface Config {
   baseURL?: string;
-  writeKey: string;
+  sdkKey: string;
   cookieDomain?: string;
   defaultTrackingConfig?: DefaultTrackingConfig;
   requestConfig?: RequestInit;
