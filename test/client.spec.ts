@@ -49,7 +49,7 @@ describe('Metrical', () => {
     });
 
     it('should perform http request', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -68,7 +68,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -83,7 +83,7 @@ describe('Metrical', () => {
     it('should respect configuration parameters', async () => {
       const client = new Metrical({
         baseURL: 'http://localhost:8080',
-        writeKey: 'key',
+        sdkKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
 
@@ -104,7 +104,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -117,9 +117,9 @@ describe('Metrical', () => {
     });
 
     it('should include identification relations', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
-      await client.identify({ user_id: 'user' });
+      await client.identify({ users: 'user' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -138,7 +138,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { user_id: 'user' } }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -151,10 +151,10 @@ describe('Metrical', () => {
     });
 
     it('should include anonymous id when not identified and not include it when identified', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
-      await client.identify({ user_id: 'user', lead_id: 'lead' });
+      await client.identify({ users: 'user', leads: 'lead' });
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.metrical.io/v1/ingestion/events', {
@@ -172,7 +172,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -186,8 +186,8 @@ describe('Metrical', () => {
         body: JSON.stringify({
           identify: [
             {
-              anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              user_id: 'user',
+              anonymous: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
+              users: 'user',
             },
           ],
         }),
@@ -212,7 +212,10 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { user_id: 'user' } }, { id: { lead_id: 'lead' } }],
+              relations: [
+                { object_slug: 'users', record_id: 'user' },
+                { object_slug: 'leads', record_id: 'lead' },
+              ],
             },
           ],
         }),
@@ -225,9 +228,9 @@ describe('Metrical', () => {
     });
 
     it('should set cookie on top accessible domain by default', async () => {
-      const client = new Metrical({ writeKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key' });
 
-      await client.identify({ user_id: 'user' });
+      await client.identify({ users: 'user' });
 
       expect(document.cookie).toContain(IDENTIFICATION_KEY);
       // cookie is set on .com domain because in test environment it's permitted
@@ -238,11 +241,11 @@ describe('Metrical', () => {
 
     it('should honor tracking disabled by default flag', async () => {
       const client = new Metrical({
-        writeKey: 'key',
+        sdkKey: 'key',
         disableTrackingByDefault: true,
       });
 
-      await client.identify({ user_id: 'user' });
+      await client.identify({ users: 'user' });
 
       expect(global.fetch).not.toHaveBeenCalled();
     });
@@ -251,7 +254,7 @@ describe('Metrical', () => {
       Cookies.set(TRACKING_ENABLED_STATE_KEY, 'true', { domain: getCookieDomain({} as any), expires: 365 });
 
       const client = new Metrical({
-        writeKey: 'key',
+        sdkKey: 'key',
         disableTrackingByDefault: true,
       });
 
@@ -261,7 +264,7 @@ describe('Metrical', () => {
     });
 
     it('should toggle tracking using enable and disable calls', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -277,7 +280,7 @@ describe('Metrical', () => {
     });
 
     it('should include default properties on page view track', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView();
 
@@ -304,7 +307,7 @@ describe('Metrical', () => {
                 $utm_campaign: 'campaign',
                 $gclid: 'id',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -317,7 +320,7 @@ describe('Metrical', () => {
     });
 
     it('should use custom name and include override properties on page view track', async () => {
-      const client = new Metrical({ writeKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
@@ -345,7 +348,7 @@ describe('Metrical', () => {
                 $gclid: 'id',
                 my_prop: 'prop_value',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -359,7 +362,7 @@ describe('Metrical', () => {
 
     it('should not include marketing attribution on page view track if disabled', async () => {
       const client = new Metrical({
-        writeKey: 'key',
+        sdkKey: 'key',
         defaultTrackingConfig: { marketingAttribution: false, sessions: { enabled: false } },
       });
 
@@ -386,7 +389,7 @@ describe('Metrical', () => {
                 $path: '/path/index.html',
                 $query: '?foo=bar&utm_campaign=campaign&gclid=id',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -400,7 +403,7 @@ describe('Metrical', () => {
 
     it('should include disabled ip and geolocation tracking flag when it is disabled', async () => {
       const client = new Metrical({
-        writeKey: 'key',
+        sdkKey: 'key',
         trackIpAndGeolocation: false,
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
@@ -422,7 +425,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
               track_ip_and_geolocation: false,
             },
           ],
@@ -436,7 +439,7 @@ describe('Metrical', () => {
     });
 
     it('should save anonymous id to storage', async () => {
-      const client = new Metrical({ writeKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -446,7 +449,7 @@ describe('Metrical', () => {
 
     it('should track session excluding certain events', async () => {
       const client = new Metrical({
-        writeKey: 'key',
+        sdkKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Excluded Event'] } },
       });
 
@@ -486,9 +489,10 @@ describe('Metrical', () => {
                 $gclid: 'id',
               },
               relations: [
-                { id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } },
+                { object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' },
                 {
-                  id: { session_id: sessionId },
+                  object_slug: 'sessions',
+                  record_id: sessionId,
                   set_once: {
                     $start_event: 'Page View',
                     $start_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
@@ -536,7 +540,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -563,7 +567,7 @@ describe('Metrical', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } }],
+              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
             },
           ],
         }),
@@ -590,9 +594,10 @@ describe('Metrical', () => {
                 $browser_version: '124.0',
               },
               relations: [
-                { id: { anonymous_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' } },
+                { object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' },
                 {
-                  id: { session_id: sessionId },
+                  object_slug: 'sessions',
+                  record_id: sessionId,
                   set_once: {},
                   set: {
                     $session_start: '2024-01-01T00:00:00.000Z',
@@ -617,7 +622,7 @@ describe('Metrical', () => {
     });
 
     it('should return identifier that was set', async () => {
-      const client = new Metrical({ writeKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key' });
 
       await client.identify({ identifier_key: 'identifier_value' });
       expect(client.getIdentifier('identifier_key')).toEqual('identifier_value');
@@ -625,12 +630,12 @@ describe('Metrical', () => {
     });
 
     it('should set record properties', async () => {
-      const client = new Metrical({ writeKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key' });
 
       const records = [
         {
           id: 'd63506b4-cea0-4fde-9a0e-cb2edee48929',
-          workspace_object_id: 'user',
+          slug: 'user',
           properties: {
             set: {
               name: 'user',
@@ -642,7 +647,7 @@ describe('Metrical', () => {
         },
         {
           id: 'a1514d79-845e-4e6e-947a-d5151f5ec93c',
-          workspace_object_id: 'account',
+          slug: 'account',
           properties: {
             set: {
               title: 'account',
@@ -671,7 +676,7 @@ describe('Metrical', () => {
         value: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
       });
 
-      const client = new Metrical({ writeKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key' });
 
       await client.trackPageView();
 

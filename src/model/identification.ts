@@ -1,6 +1,6 @@
 export type Identification = {
-  user_id?: string;
-  anonymous_id?: string;
-  account_id?: string;
+  users?: string;
+  anonymous?: string;
+  accounts?: string;
   [key: string]: string;
 };

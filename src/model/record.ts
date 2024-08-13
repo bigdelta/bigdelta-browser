@@ -7,6 +7,6 @@ export type PropertyChanges = {
 
 export type SetRecordProperties = {
   id: string;
-  workspace_object_id: string;
+  slug: string;
   properties: PropertyChanges;
 };

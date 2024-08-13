@@ -2,7 +2,8 @@ import { NestedObject } from './nestedObject';
 import { PropertyChanges } from './record';
 
 export type Relation = PropertyChanges & {
-  id: { [key: string]: string };
+  object_slug: string;
+  record_id: string;
 };
 
 export type EventPayload = {
