@@ -439,7 +439,7 @@ describe('Metrical', () => {
     });
 
     it('should save anonymous id to storage', async () => {
-      const client = new Metrical({ sdkKey: 'key' });
+      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 

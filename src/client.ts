@@ -72,6 +72,8 @@ export class Metrical {
     try {
       this.assertConfig();
 
+      const identificationRelations = this.getIdentificationRelations();
+
       const browserWithVersion = window ? getBrowserWithVersion(window.navigator.userAgent) : undefined;
       const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
       const deviceType = window ? getDeviceType(window.navigator.userAgent) : undefined;
@@ -94,6 +96,7 @@ export class Metrical {
       }));
 
       const sessionInfo = this.tryUpdateSessionState(events);
+
       const [initialSessionProperties, sessionProperties] = this.getSessionProperties(
         sessionInfo,
         eventsWithProperties,
@@ -102,7 +105,7 @@ export class Metrical {
       const finalEvents = eventsWithProperties.map((event) => ({
         ...event,
         relations: [
-          ...this.getIdentificationRelations(),
+          ...identificationRelations,
           ...(sessionInfo.shouldTrack && this.isInSessionScope(event, this.config.defaultTrackingConfig.sessions)
             ? [
                 {
