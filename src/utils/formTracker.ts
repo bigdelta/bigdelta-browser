@@ -1,5 +1,3 @@
-import { EventPayload } from '../model/eventPayload';
-
 export class FormTracker {
   constructor(
     private excludedFormIds: string[],
