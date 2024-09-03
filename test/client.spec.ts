@@ -1,4 +1,4 @@
-import { Metrical } from '../src';
+import { Bigdelta } from '../src';
 import * as uuid from 'uuid';
 import Cookies from 'js-cookie';
 import { getCookieDomain } from '../src/utils/getCookieDomain';
@@ -7,7 +7,7 @@ import { DateTime, Settings } from 'luxon';
 
 jest.mock('uuid');
 
-describe('Metrical', () => {
+describe('Bigdelta', () => {
   describe('track', () => {
     const anonymousId = 'f3f7e6b2-0074-457b-9197-6eae16aedf13';
     const originalLuxonNow = Settings.now;
@@ -49,11 +49,11 @@ describe('Metrical', () => {
     });
 
     it('should perform http request', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -81,7 +81,7 @@ describe('Metrical', () => {
     });
 
     it('should respect configuration parameters', async () => {
-      const client = new Metrical({
+      const client = new Bigdelta({
         baseURL: 'http://localhost:8080',
         sdkKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: false } },
@@ -117,13 +117,13 @@ describe('Metrical', () => {
     });
 
     it('should include identification relations', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.identify({ users: 'user' });
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -151,13 +151,13 @@ describe('Metrical', () => {
     });
 
     it('should include anonymous id when not identified and not include it when identified', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
       await client.identify({ users: 'user', leads: 'lead' });
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -182,7 +182,7 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.metrical.io/v1/ingestion/identify', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/identify', {
         body: JSON.stringify({
           identify: [
             {
@@ -197,7 +197,7 @@ describe('Metrical', () => {
         },
         method: 'POST',
       });
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -228,7 +228,7 @@ describe('Metrical', () => {
     });
 
     it('should set cookie on top accessible domain by default', async () => {
-      const client = new Metrical({ sdkKey: 'key' });
+      const client = new Bigdelta({ sdkKey: 'key' });
 
       await client.identify({ users: 'user' });
 
@@ -240,7 +240,7 @@ describe('Metrical', () => {
     });
 
     it('should honor tracking disabled by default flag', async () => {
-      const client = new Metrical({
+      const client = new Bigdelta({
         sdkKey: 'key',
         disableTrackingByDefault: true,
       });
@@ -253,7 +253,7 @@ describe('Metrical', () => {
     it('should load tracking enabled flag from cookies', async () => {
       Cookies.set(TRACKING_ENABLED_STATE_KEY, 'true', { domain: getCookieDomain({} as any), expires: 365 });
 
-      const client = new Metrical({
+      const client = new Bigdelta({
         sdkKey: 'key',
         disableTrackingByDefault: true,
       });
@@ -264,7 +264,7 @@ describe('Metrical', () => {
     });
 
     it('should toggle tracking using enable and disable calls', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -280,11 +280,11 @@ describe('Metrical', () => {
     });
 
     it('should include default properties on page view track', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -320,11 +320,11 @@ describe('Metrical', () => {
     });
 
     it('should use custom name and include override properties on page view track', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -361,14 +361,14 @@ describe('Metrical', () => {
     });
 
     it('should not include marketing attribution on page view track if disabled', async () => {
-      const client = new Metrical({
+      const client = new Bigdelta({
         sdkKey: 'key',
         defaultTrackingConfig: { marketingAttribution: false, sessions: { enabled: false } },
       });
 
       await client.trackPageView();
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -402,7 +402,7 @@ describe('Metrical', () => {
     });
 
     it('should include disabled ip and geolocation tracking flag when it is disabled', async () => {
-      const client = new Metrical({
+      const client = new Bigdelta({
         sdkKey: 'key',
         trackIpAndGeolocation: false,
         defaultTrackingConfig: { sessions: { enabled: false } },
@@ -410,7 +410,7 @@ describe('Metrical', () => {
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -439,7 +439,7 @@ describe('Metrical', () => {
     });
 
     it('should save anonymous id to storage', async () => {
-      const client = new Metrical({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -448,7 +448,7 @@ describe('Metrical', () => {
     });
 
     it('should track session excluding certain events', async () => {
-      const client = new Metrical({
+      const client = new Bigdelta({
         sdkKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Excluded Event'] } },
       });
@@ -465,7 +465,7 @@ describe('Metrical', () => {
 
       const sessionId = client.getSessionId();
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -525,7 +525,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -551,7 +551,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -578,7 +578,7 @@ describe('Metrical', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.metrical.io/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -622,7 +622,7 @@ describe('Metrical', () => {
     });
 
     it('should return identifier that was set', async () => {
-      const client = new Metrical({ sdkKey: 'key' });
+      const client = new Bigdelta({ sdkKey: 'key' });
 
       await client.identify({ identifier_key: 'identifier_value' });
       expect(client.getIdentifier('identifier_key')).toEqual('identifier_value');
@@ -630,7 +630,7 @@ describe('Metrical', () => {
     });
 
     it('should set record properties', async () => {
-      const client = new Metrical({ sdkKey: 'key' });
+      const client = new Bigdelta({ sdkKey: 'key' });
 
       const records = [
         {
@@ -661,7 +661,7 @@ describe('Metrical', () => {
 
       await client.setRecordProperties(records);
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.metrical.io/v1/ingestion/records', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/records', {
         body: JSON.stringify({ records }),
         headers: {
           'Content-Type': 'application/json',
@@ -676,7 +676,7 @@ describe('Metrical', () => {
         value: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
       });
 
-      const client = new Metrical({ sdkKey: 'key' });
+      const client = new Bigdelta({ sdkKey: 'key' });
 
       await client.trackPageView();
 

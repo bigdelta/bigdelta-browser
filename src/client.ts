@@ -31,7 +31,7 @@ interface SessionInfo {
   isNew?: boolean;
 }
 
-export class Metrical {
+export class Bigdelta {
   private readonly config: FullConfig;
   private persistentStorage: PersistentStorage;
 
@@ -41,7 +41,7 @@ export class Metrical {
 
   constructor(config: Config) {
     this.config = {
-      baseURL: config.baseURL || 'https://eu.api.metrical.io',
+      baseURL: config.baseURL || 'https://eu.api.bigdelta.com',
       defaultTrackingConfig: config.defaultTrackingConfig || {},
       ...config,
     };
@@ -386,11 +386,11 @@ export class Metrical {
 
     if (config?.singlePageAppTracking !== 'disabled') {
       window.addEventListener('popstate', function () {
-        window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
+        window.dispatchEvent(new CustomEvent('bigdelta_location_change', { detail: currentPageContext() }));
       });
 
       window.addEventListener('hashchange', function () {
-        window.dispatchEvent(new CustomEvent('metrical_location_change', { detail: currentPageContext() }));
+        window.dispatchEvent(new CustomEvent('bigdelta_location_change', { detail: currentPageContext() }));
       });
 
       const nativePushState = window.history.pushState;
@@ -398,7 +398,7 @@ export class Metrical {
         window.history.pushState = function (state, unused, url) {
           nativePushState.call(window.history, state, unused, url);
           window.dispatchEvent(
-            new CustomEvent('metrical_location_change', {
+            new CustomEvent('bigdelta_location_change', {
               detail: currentPageContext(),
             }),
           );
@@ -410,7 +410,7 @@ export class Metrical {
         window.history.replaceState = function (state, unused, url) {
           nativeReplaceState.call(window.history, state, unused, url);
           window.dispatchEvent(
-            new CustomEvent('metrical_location_change', {
+            new CustomEvent('bigdelta_location_change', {
               detail: currentPageContext(),
             }),
           );
@@ -418,7 +418,7 @@ export class Metrical {
       }
 
       window.addEventListener(
-        'metrical_location_change',
+        'bigdelta_location_change',
         async function (event: CustomEvent<PageContext>) {
           const trackedUrl = event.detail.location.href;
 

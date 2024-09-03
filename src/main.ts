@@ -1,13 +1,13 @@
-import { Metrical } from './client';
+import { Bigdelta } from './client';
 
 declare global {
   interface Window {
-    metricalClient: Metrical;
+    bigdeltaClient: Bigdelta;
     addForm: () => void;
   }
 }
 
-window.metricalClient = new Metrical({
+window.bigdeltaClient = new Bigdelta({
   baseURL: 'http://localhost:8080',
   sdkKey: 'testKey',
   defaultTrackingConfig: {

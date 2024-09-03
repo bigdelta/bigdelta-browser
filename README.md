@@ -1,34 +1,34 @@
-# metrical-browser
+# bigdelta-browser
 
-Metrical SDK for the browser.
+Bigdelta SDK for the browser.
 
 ## Installation
 
-To get started with using Metrical Browser SDK, install the package to your project via npm, yarn or script loader.
+To get started with using Bigdelta Browser SDK, install the package to your project via npm, yarn or script loader.
 
 ### Installing via package manager
 
-This SDK is available as a package on npm registry named `@metrical-io/metrical-browser`. You can install the package using npm or yarn CLI.
+This SDK is available as a package on npm registry named `@bigdelta-com/bigdelta-browser`. You can install the package using npm or yarn CLI.
 
 #### Using npm CLI
 
 ```sh
-npm install @metrical-io/metrical-browser
+npm install @bigdelta-com/bigdelta-browser
 ```
 
 #### Using yarn CLI
 
 ```sh
 # yarn
-yarn add @metrical-io/metrical-browser
+yarn add @bigdelta-com/bigdelta-browser
 ```
 
 Import the package into your project and initialize it with your SDK key.
 
 ```ts
-import { Metrical } from '@metrical-io/metrical-browser';
+import { Bigdelta } from '@bigdelta-com/bigdelta-browser';
 
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }, forms: { enabled: true }} });
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }, forms: { enabled: true }} });
 ```
 
 ### Installing via script tag
@@ -36,9 +36,14 @@ const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { page
 This SDK is also available through CDN.
 
 ```html
-<script type="application/javascript" src="https://cdn.jsdelivr.net/npm/@metrical-io/metrical-browser/dist/index.iife.min.js"></script>
+
+<script type="application/javascript"
+        src="https://cdn.jsdelivr.net/npm/@bigdelta-com/bigdelta-browser/dist/index.iife.min.js"></script>
 <script type="text/javascript">
-  const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }, forms: { enabled: true }} });
+    const client = new Bigdelta({
+        sdkKey: '<SDK_KEY>',
+        defaultTrackingConfig: {pageViews: {enabled: true, singlePageAppTracking: 'any'}, forms: {enabled: true}}
+    });
 </script>
 ```
 
@@ -67,10 +72,10 @@ All events are sent via HTTPS.
 
 Form submissions can be automatically tracked by enabling the `defaultTrackingConfig.forms` during client creation (disabled by default), as shown below:
 ```html
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true }}});
 ```
 
-No additional code is needed to capture form submissions. Metrical takes care of it automatically. This applies to both single-page applications and traditional websites.
+No additional code is needed to capture form submissions. Bigdelta takes care of it automatically. This applies to both single-page applications and traditional websites.
 
 The form data is included as properties in the tracked event.
 
@@ -78,10 +83,10 @@ By default, all forms and their input fields are tracked, except those with the 
 
 ```html
 // Track all forms except the one with the ID 'my-sensitive-form'.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedFormIds: ['my-sensitive-form'] }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedFormIds: ['my-sensitive-form'] }}});
 
 // Track all input fields except the one with the name 'my-sensitive-field'. 
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedInputFieldNames: ['my-sensitive-field'] }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedInputFieldNames: ['my-sensitive-field'] }}});
 ```
 
 #### Important Notes
@@ -104,23 +109,23 @@ client.trackPageView({ event_name: 'My Custom Event', properties: { my_property:
 #### Automatically
 Page View events can be tracked automatically on every page load by enabling the `defaultTrackingConfig.pageViews` during client creation (disabled by default), as shown below:
 ```html
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }}});
 ```
 
 Dynamic page views in single-page applications are tracked on any URL changes by default. You can control this behavior with the `defaultTrackingConfig.pageViews.singlePageAppTracking` option, as shown below:
 
 ```html
 // Track any URL changes.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
 
 // Track when the path or query string changes, ignoring changes in the hash.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path-with-query' }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path-with-query' }}});
     
 // Only track when the path changes, disregarding changes in the query string or hash.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
 
 // Disable dynamic page views tracking in single-page applications.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
 ```
 
 ### Attribute marketing data
@@ -128,7 +133,7 @@ The library will automatically populate Page View events with any UTM parameters
 
 This default behavior can be turned off by disabling the `defaultTrackingConfig.marketingAttribution` option during client creation, as shown below:
 ```html
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
 ```
 
 ### Ensure idempotence
@@ -143,24 +148,24 @@ client.track({ event_name: 'My Custom Unique Event', properties: { my_property: 
 
 A session is a series of events that capture a single use of your product or a visit to your website. Analyzing sessions allows you to understand user behavior, including entry and exit points, duration of visits, activity, bounce rates, and more.
 
-Metrical automatically computes sessions based on the events you send. This means you don't need to implement any special tracking. Our SDK adds a session identifier to each event and manage sessions automatically.
+Bigdelta automatically computes sessions based on the events you send. This means you don't need to implement any special tracking. Our SDK adds a session identifier to each event and manage sessions automatically.
 
 Events from the same user, browser, and device share the same session until there is no activity for more than 30 minutes, after which subsequent events are grouped into a new session. A session can include multiple tabs and windows, as long as they are in the same browser and on the same device. For example, moving from one Tab to another counts as a single session, but switching from one Browser to another starts a new session. You can also create a new session manually by calling `client.reset()`.
 
 Events with the `created_at` property manually set are not included in sessions. Additionally, you can exclude certain events (e.g., actions triggered automatically on behalf of the user) from session calculations, as shown below:
 
 ```html
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Event Name'] }}});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Event Name'] }}});
 ```
 
 If session tracking is not needed, it can be disabled, as shown below:
 
 ```html
-const client = new Metrical({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: false } }});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: false } }});
 ```
 
 ### Manage relations
-Metrical automatically manages relationships between anonymous and identified users during tracking. However, if your events are related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
+Bigdelta automatically manages relationships between anonymous and identified users during tracking. However, if your events are related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
 ```html
 client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ object_slug: 'invoice', record_id: '63f2164c-2000-4f6c-b377-107368566222' }] });
 ```
@@ -176,7 +181,7 @@ client.track({ event_name: 'My Custom Event', properties: { my_property: 'proper
 
 ### Exclude bot traffic
 
-By default, well-known bots are filtered out by the Metrical SDK. However, there may be instances where specific bots not included in the default filter are hitting your site and affecting your data. If you notice such behavior, you can identify a common pattern in the user agent and disable tracking for these bots using the Metrical SDK.
+By default, well-known bots are filtered out by the Bigdelta SDK. However, there may be instances where specific bots not included in the default filter are hitting your site and affecting your data. If you notice such behavior, you can identify a common pattern in the user agent and disable tracking for these bots using the Bigdelta SDK.
 
 Here’s how you can disable tracking for a specific bot:
 
@@ -244,31 +249,31 @@ client.setRecordProperties([
 }]);
 ```
 
-## Protect user data with Metrical
+## Protect user data with Bigdelta
 
-Metrical prioritizes user privacy while providing flexibility in data collection. By default, Metrical is configured to transmit tracking data, but you have options to control this behavior.
+Bigdelta prioritizes user privacy while providing flexibility in data collection. By default, Bigdelta is configured to transmit tracking data, but you have options to control this behavior.
 
 ### Disable tracking
 
-To prioritize user privacy, you can proactively disable tracking during initialization of the Metrical client. Set the `disableTrackingByDefault` property to `true`:
+To prioritize user privacy, you can proactively disable tracking during initialization of the Bigdelta client. Set the `disableTrackingByDefault` property to `true`:
 
 ```javascript
-const client = new Metrical({ sdkKey: '<SDK_KEY>', disableTrackingByDefault: true });
+const client = new Bigdelta({sdkKey: '<SDK_KEY>', disableTrackingByDefault: true});
 ```
 
 ### Dynamically toggle tracking
 
-Metrical client allows you to dynamically manage tracking based on user preferences or specific scenarios. Use the following methods:
+Bigdelta client allows you to dynamically manage tracking based on user preferences or specific scenarios. Use the following methods:
 
 - `client.enableTracking()` activates the transmission of tracking data (this is the default state).
 - `client.disableTracking()` deactivates the transmission of tracking data.
 
 ### Control IP address and geolocation tracking
-For more precise control over user privacy, Metrical offers the option to specifically toggle the tracking of IP address and geolocation information. Use the `trackIpAndGeolocation` property during initialization:
+For more precise control over user privacy, Bigdelta offers the option to specifically toggle the tracking of IP address and geolocation information. Use the `trackIpAndGeolocation` property during initialization:
 
 ```javascript
-const client = new Metrical({ 
-    sdkKey: '<SDK_KEY>', 
+const client = new Bigdelta({
+    sdkKey: '<SDK_KEY>',
     trackIpAndGeolocation: false  // Disable IP and geolocation tracking
 });
 ```
@@ -278,8 +283,8 @@ By default, cookies with a localStorage fallback are used to store state in the 
 
 ```html
 // Use cookies explicitly.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', storageType: 'cookies'});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', storageType: 'cookies'});
 
 // Use localStorage explicitly.
-const client = new Metrical({ sdkKey: '<SDK_KEY>', storageType: 'localStorage'});
+const client = new Bigdelta({ sdkKey: '<SDK_KEY>', storageType: 'localStorage'});
 ```
