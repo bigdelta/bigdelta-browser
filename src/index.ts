@@ -1,3 +1,3 @@
-import { Metrical } from './client';
+import { Bigdelta } from './client';
 
-export { Metrical };
+export { Bigdelta };

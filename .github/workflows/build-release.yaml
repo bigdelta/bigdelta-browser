@@ -1,4 +1,4 @@
-name: metrical-browser build and release workflow
+name: bigdelta-browser build and release workflow
 on:
   push:
     branches:

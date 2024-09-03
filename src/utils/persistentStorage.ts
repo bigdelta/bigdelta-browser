@@ -4,10 +4,10 @@ import Cookies, { CookieAttributes } from 'js-cookie';
 import { getCookieDomain } from './getCookieDomain';
 import { Session } from '../model/session';
 
-export const IDENTIFICATION_KEY = 'metrical_analytics_identification';
-export const TRACKING_ENABLED_STATE_KEY = 'metrical_analytics_tracking_enabled';
-export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'metrical_analytics_track_ip_and_geolocation';
-export const SESSION_KEY = 'metrical_analytics_session';
+export const IDENTIFICATION_KEY = 'bigdelta_analytics_identification';
+export const TRACKING_ENABLED_STATE_KEY = 'bigdelta_analytics_tracking_enabled';
+export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'bigdelta_analytics_track_ip_and_geolocation';
+export const SESSION_KEY = 'bigdelta_analytics_session';
 
 export class PersistentStorage {
   constructor(private config: FullConfig) {}

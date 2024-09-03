@@ -1,3 +1,3 @@
-import { Metrical } from '../client';
+import { Bigdelta } from '../client';
 
-(window as any).Metrical = Metrical;
+(window as any).Bigdelta = Bigdelta;
