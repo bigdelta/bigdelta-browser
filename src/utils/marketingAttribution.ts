@@ -25,7 +25,7 @@ const getPropertiesFromQueryParams = (url: string, params: string[]): Record<str
   let queryString = url?.split('?')[1];
   return Object.fromEntries(
     Array.from(new URLSearchParams(queryString).entries())
-      .filter(([key, value]) => params.includes(key))
+      .filter(([key]) => params.includes(key))
       .map(([key, value]) => [`$${key}`, value]),
   );
 };
