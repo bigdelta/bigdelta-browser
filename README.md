@@ -8,25 +8,25 @@ To get started with using Bigdelta Browser SDK, install the package to your proj
 
 ### Installing via package manager
 
-This SDK is available as a package on npm registry named `@bigdelta-com/bigdelta-browser`. You can install the package using npm or yarn CLI.
+This SDK is available as a package on npm registry named `@bigdelta/bigdelta-browser`. You can install the package using npm or yarn CLI.
 
 #### Using npm CLI
 
 ```sh
-npm install @bigdelta-com/bigdelta-browser
+npm install @bigdelta/bigdelta-browser
 ```
 
 #### Using yarn CLI
 
 ```sh
 # yarn
-yarn add @bigdelta-com/bigdelta-browser
+yarn add @bigdelta/bigdelta-browser
 ```
 
 Import the package into your project and initialize it with your SDK key.
 
 ```ts
-import { Bigdelta } from '@bigdelta-com/bigdelta-browser';
+import { Bigdelta } from '@bigdelta/bigdelta-browser';
 
 const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }, forms: { enabled: true }} });
 ```
@@ -38,7 +38,7 @@ This SDK is also available through CDN.
 ```html
 
 <script type="application/javascript"
-        src="https://cdn.jsdelivr.net/npm/@bigdelta-com/bigdelta-browser/dist/index.iife.min.js"></script>
+        src="https://cdn.jsdelivr.net/npm/@bigdelta/bigdelta-browser/dist/index.iife.min.js"></script>
 <script type="text/javascript">
     const client = new Bigdelta({
         sdkKey: '<SDK_KEY>',
