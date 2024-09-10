@@ -23,12 +23,13 @@ npm install @bigdelta/bigdelta-browser
 yarn add @bigdelta/bigdelta-browser
 ```
 
-Import the package into your project and initialize it with your SDK key.
+Import the package into your project and initialize it with your tracking key.
 
 ```ts
 import { Bigdelta } from '@bigdelta/bigdelta-browser';
 
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }, forms: { enabled: true }} });
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, 
+            singlePageAppTracking: 'any' }, forms: { enabled: true }} });
 ```
 
 ### Installing via script tag
@@ -41,7 +42,7 @@ This SDK is also available through CDN.
         src="https://cdn.jsdelivr.net/npm/@bigdelta/bigdelta-browser/dist/index.iife.min.js"></script>
 <script type="text/javascript">
     const client = new Bigdelta({
-        sdkKey: '<SDK_KEY>',
+        trackingKey: '<TRACKING_KEY>',
         defaultTrackingConfig: {pageViews: {enabled: true, singlePageAppTracking: 'any'}, forms: {enabled: true}}
     });
 </script>
@@ -72,7 +73,7 @@ All events are sent via HTTPS.
 
 Form submissions can be automatically tracked by enabling the `defaultTrackingConfig.forms` during client creation (disabled by default), as shown below:
 ```html
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true }}});
 ```
 
 No additional code is needed to capture form submissions. Bigdelta takes care of it automatically. This applies to both single-page applications and traditional websites.
@@ -83,10 +84,12 @@ By default, all forms and their input fields are tracked, except those with the 
 
 ```html
 // Track all forms except the one with the ID 'my-sensitive-form'.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedFormIds: ['my-sensitive-form'] }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true, 
+    excludedFormIds: ['my-sensitive-form'] }}});
 
 // Track all input fields except the one with the name 'my-sensitive-field'. 
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { forms: { enabled: true, excludedInputFieldNames: ['my-sensitive-field'] }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true, 
+        excludedInputFieldNames: ['my-sensitive-field'] }}});
 ```
 
 #### Important Notes
@@ -109,23 +112,23 @@ client.trackPageView({ event_name: 'My Custom Event', properties: { my_property:
 #### Automatically
 Page View events can be tracked automatically on every page load by enabling the `defaultTrackingConfig.pageViews` during client creation (disabled by default), as shown below:
 ```html
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }}});
 ```
 
 Dynamic page views in single-page applications are tracked on any URL changes by default. You can control this behavior with the `defaultTrackingConfig.pageViews.singlePageAppTracking` option, as shown below:
 
 ```html
 // Track any URL changes.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }}});
 
 // Track when the path or query string changes, ignoring changes in the hash.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path-with-query' }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path-with-query' }}});
     
 // Only track when the path changes, disregarding changes in the query string or hash.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'path' }}});
 
 // Disable dynamic page views tracking in single-page applications.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'disabled' }}});
 ```
 
 ### Attribute marketing data
@@ -133,7 +136,8 @@ The library will automatically populate Page View events with any UTM parameters
 
 This default behavior can be turned off by disabling the `defaultTrackingConfig.marketingAttribution` option during client creation, as shown below:
 ```html
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }, marketingAttribution: false }});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true }, 
+    marketingAttribution: false }});
 ```
 
 ### Ensure idempotence
@@ -155,13 +159,14 @@ Events from the same user, browser, and device share the same session until ther
 Events with the `created_at` property manually set are not included in sessions. Additionally, you can exclude certain events (e.g., actions triggered automatically on behalf of the user) from session calculations, as shown below:
 
 ```html
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Event Name'] }}});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessions: { enabled: true, 
+    excludeEvents: ['Event Name'] }}});
 ```
 
 If session tracking is not needed, it can be disabled, as shown below:
 
 ```html
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', defaultTrackingConfig: { sessions: { enabled: false } }});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessions: { enabled: false } }});
 ```
 
 ### Manage relations
@@ -258,7 +263,7 @@ Bigdelta prioritizes user privacy while providing flexibility in data collection
 To prioritize user privacy, you can proactively disable tracking during initialization of the Bigdelta client. Set the `disableTrackingByDefault` property to `true`:
 
 ```javascript
-const client = new Bigdelta({sdkKey: '<SDK_KEY>', disableTrackingByDefault: true});
+const client = new Bigdelta({trackingKey: '<TRACKING_KEY>', disableTrackingByDefault: true});
 ```
 
 ### Dynamically toggle tracking
@@ -273,7 +278,7 @@ For more precise control over user privacy, Bigdelta offers the option to specif
 
 ```javascript
 const client = new Bigdelta({
-    sdkKey: '<SDK_KEY>',
+    trackingKey: '<TRACKING_KEY>',
     trackIpAndGeolocation: false  // Disable IP and geolocation tracking
 });
 ```
@@ -283,8 +288,8 @@ By default, cookies with a localStorage fallback are used to store state in the 
 
 ```html
 // Use cookies explicitly.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', storageType: 'cookies'});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', storageType: 'cookies'});
 
 // Use localStorage explicitly.
-const client = new Bigdelta({ sdkKey: '<SDK_KEY>', storageType: 'localStorage'});
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', storageType: 'localStorage'});
 ```

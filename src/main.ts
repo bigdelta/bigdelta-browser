@@ -9,7 +9,7 @@ declare global {
 
 window.bigdeltaClient = new Bigdelta({
   baseURL: 'http://localhost:8080',
-  sdkKey: 'testKey',
+  trackingKey: 'testKey',
   defaultTrackingConfig: {
     pageViews: {
       enabled: true,
