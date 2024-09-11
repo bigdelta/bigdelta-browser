@@ -132,7 +132,7 @@ export class Bigdelta {
         headers: {
           ...this.config.requestConfig?.headers,
           ...config?.headers,
-          'x-write-key': this.config.sdkKey,
+          'x-tracking-key': this.config.trackingKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -308,7 +308,7 @@ export class Bigdelta {
         headers: {
           ...this.config.requestConfig?.headers,
           ...config?.headers,
-          'x-write-key': this.config.sdkKey,
+          'x-tracking-key': this.config.trackingKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ identify: [{ anonymous: anonymousId, users: userId }] }),
@@ -333,7 +333,7 @@ export class Bigdelta {
         headers: {
           ...this.config.requestConfig?.headers,
           ...config?.headers,
-          'x-write-key': this.config.sdkKey,
+          'x-tracking-key': this.config.trackingKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ records }),
@@ -454,7 +454,7 @@ export class Bigdelta {
 
   private assertConfig() {
     assert(!!this.config.baseURL, 'baseURL is required');
-    assert(!!this.config.sdkKey, 'sdkKey is required');
+    assert(!!this.config.trackingKey, 'trackingKey is required');
   }
 
   private parseReferringDomain(referrer: string) {

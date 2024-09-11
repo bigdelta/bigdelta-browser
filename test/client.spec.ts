@@ -49,7 +49,7 @@ describe('Bigdelta', () => {
     });
 
     it('should perform http request', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -83,7 +83,7 @@ describe('Bigdelta', () => {
     it('should respect configuration parameters', async () => {
       const client = new Bigdelta({
         baseURL: 'http://localhost:8080',
-        sdkKey: 'key',
+        trackingKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
 
@@ -117,7 +117,7 @@ describe('Bigdelta', () => {
     });
 
     it('should include identification relations', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.identify({ users: 'user' });
 
@@ -151,7 +151,7 @@ describe('Bigdelta', () => {
     });
 
     it('should include anonymous id when not identified and not include it when identified', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
       await client.identify({ users: 'user', leads: 'lead' });
@@ -228,7 +228,7 @@ describe('Bigdelta', () => {
     });
 
     it('should set cookie on top accessible domain by default', async () => {
-      const client = new Bigdelta({ sdkKey: 'key' });
+      const client = new Bigdelta({ trackingKey: 'key' });
 
       await client.identify({ users: 'user' });
 
@@ -241,7 +241,7 @@ describe('Bigdelta', () => {
 
     it('should honor tracking disabled by default flag', async () => {
       const client = new Bigdelta({
-        sdkKey: 'key',
+        trackingKey: 'key',
         disableTrackingByDefault: true,
       });
 
@@ -254,7 +254,7 @@ describe('Bigdelta', () => {
       Cookies.set(TRACKING_ENABLED_STATE_KEY, 'true', { domain: getCookieDomain({} as any), expires: 365 });
 
       const client = new Bigdelta({
-        sdkKey: 'key',
+        trackingKey: 'key',
         disableTrackingByDefault: true,
       });
 
@@ -264,7 +264,7 @@ describe('Bigdelta', () => {
     });
 
     it('should toggle tracking using enable and disable calls', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -280,7 +280,7 @@ describe('Bigdelta', () => {
     });
 
     it('should include default properties on page view track', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView();
 
@@ -320,7 +320,7 @@ describe('Bigdelta', () => {
     });
 
     it('should use custom name and include override properties on page view track', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
@@ -362,7 +362,7 @@ describe('Bigdelta', () => {
 
     it('should not include marketing attribution on page view track if disabled', async () => {
       const client = new Bigdelta({
-        sdkKey: 'key',
+        trackingKey: 'key',
         defaultTrackingConfig: { marketingAttribution: false, sessions: { enabled: false } },
       });
 
@@ -403,7 +403,7 @@ describe('Bigdelta', () => {
 
     it('should include disabled ip and geolocation tracking flag when it is disabled', async () => {
       const client = new Bigdelta({
-        sdkKey: 'key',
+        trackingKey: 'key',
         trackIpAndGeolocation: false,
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
@@ -439,7 +439,7 @@ describe('Bigdelta', () => {
     });
 
     it('should save anonymous id to storage', async () => {
-      const client = new Bigdelta({ sdkKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -449,7 +449,7 @@ describe('Bigdelta', () => {
 
     it('should track session excluding certain events', async () => {
       const client = new Bigdelta({
-        sdkKey: 'key',
+        trackingKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Excluded Event'] } },
       });
 
@@ -622,7 +622,7 @@ describe('Bigdelta', () => {
     });
 
     it('should return identifier that was set', async () => {
-      const client = new Bigdelta({ sdkKey: 'key' });
+      const client = new Bigdelta({ trackingKey: 'key' });
 
       await client.identify({ identifier_key: 'identifier_value' });
       expect(client.getIdentifier('identifier_key')).toEqual('identifier_value');
@@ -630,7 +630,7 @@ describe('Bigdelta', () => {
     });
 
     it('should set record properties', async () => {
-      const client = new Bigdelta({ sdkKey: 'key' });
+      const client = new Bigdelta({ trackingKey: 'key' });
 
       const records = [
         {
@@ -676,7 +676,7 @@ describe('Bigdelta', () => {
         value: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
       });
 
-      const client = new Bigdelta({ sdkKey: 'key' });
+      const client = new Bigdelta({ trackingKey: 'key' });
 
       await client.trackPageView();
 
