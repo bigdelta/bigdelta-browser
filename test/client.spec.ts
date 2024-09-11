@@ -74,7 +74,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -110,7 +110,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -144,7 +144,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -178,7 +178,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -193,7 +193,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -221,7 +221,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -313,7 +313,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -354,7 +354,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -395,7 +395,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -432,7 +432,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -520,7 +520,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -546,7 +546,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -573,7 +573,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -615,7 +615,7 @@ describe('Bigdelta', () => {
         }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
@@ -665,7 +665,7 @@ describe('Bigdelta', () => {
         body: JSON.stringify({ records }),
         headers: {
           'Content-Type': 'application/json',
-          'x-write-key': 'key',
+          'x-tracking-key': 'key',
         },
         method: 'POST',
       });
