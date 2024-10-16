@@ -236,7 +236,7 @@ client.setRecordProperties([
       name: 'user',
     },
     set_once: {
-      email: 'user@email.com',
+      email_address: 'user@email.com',
     },
   },
 },
