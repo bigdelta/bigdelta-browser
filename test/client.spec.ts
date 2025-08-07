@@ -1,15 +1,11 @@
 import { Bigdelta } from '../src';
-import * as uuid from 'uuid';
 import Cookies from 'js-cookie';
 import { getCookieDomain } from '../src/utils/getCookieDomain';
 import { IDENTIFICATION_KEY, TRACKING_ENABLED_STATE_KEY } from '../src/utils/persistentStorage';
 import { DateTime, Settings } from 'luxon';
 
-jest.mock('uuid');
-
 describe('Bigdelta', () => {
   describe('track', () => {
-    const anonymousId = 'f3f7e6b2-0074-457b-9197-6eae16aedf13';
     const originalLuxonNow = Settings.now;
 
     beforeEach(() => {
@@ -44,40 +40,15 @@ describe('Bigdelta', () => {
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         configurable: true,
       });
-      jest.spyOn(uuid, 'v4').mockReturnValue(anonymousId);
       Settings.now = originalLuxonNow;
     });
 
-    it('should perform http request', async () => {
+    it('should not track unidentified users', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
-        body: JSON.stringify({
-          events: [
-            {
-              event_name: 'Page Viewed',
-              properties: {
-                $screen_height: 768,
-                $screen_width: 1024,
-                $referrer: 'https://www.google.com/',
-                $referring_domain: 'www.google.com',
-                $operating_system: 'Mac OS X 10.15.7',
-                $device_type: 'Desktop',
-                $browser: 'Google Chrome',
-                $browser_version: '124.0',
-              },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
-            },
-          ],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tracking-key': 'key',
-        },
-        method: 'POST',
-      });
+      expect(global.fetch).toHaveBeenCalledTimes(0);
     });
 
     it('should respect configuration parameters', async () => {
@@ -87,43 +58,11 @@ describe('Bigdelta', () => {
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
 
-      await client.track({ event_name: 'Page Viewed' });
-
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/events', {
-        body: JSON.stringify({
-          events: [
-            {
-              event_name: 'Page Viewed',
-              properties: {
-                $screen_height: 768,
-                $screen_width: 1024,
-                $referrer: 'https://www.google.com/',
-                $referring_domain: 'www.google.com',
-                $operating_system: 'Mac OS X 10.15.7',
-                $device_type: 'Desktop',
-                $browser: 'Google Chrome',
-                $browser_version: '124.0',
-              },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
-            },
-          ],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tracking-key': 'key',
-        },
-        method: 'POST',
-      });
-    });
-
-    it('should include identification relations', async () => {
-      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
-
       await client.identify({ users: 'user' });
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -150,54 +89,14 @@ describe('Bigdelta', () => {
       });
     });
 
-    it('should include anonymous id when not identified and not include it when identified', async () => {
+    it('should include all identification relations', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
-      await client.track({ event_name: 'Page Viewed' });
-      await client.identify({ users: 'user', leads: 'lead' });
+      await client.identify({ users: 'user', accounts: 'account' });
+
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
-        body: JSON.stringify({
-          events: [
-            {
-              event_name: 'Page Viewed',
-              properties: {
-                $screen_height: 768,
-                $screen_width: 1024,
-                $referrer: 'https://www.google.com/',
-                $referring_domain: 'www.google.com',
-                $operating_system: 'Mac OS X 10.15.7',
-                $device_type: 'Desktop',
-                $browser: 'Google Chrome',
-                $browser_version: '124.0',
-              },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
-            },
-          ],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tracking-key': 'key',
-        },
-        method: 'POST',
-      });
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/identify', {
-        body: JSON.stringify({
-          identify: [
-            {
-              anonymous: 'f3f7e6b2-0074-457b-9197-6eae16aedf13',
-              users: 'user',
-            },
-          ],
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-tracking-key': 'key',
-        },
-        method: 'POST',
-      });
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -214,8 +113,42 @@ describe('Bigdelta', () => {
               },
               relations: [
                 { object_slug: 'users', record_id: 'user' },
-                { object_slug: 'leads', record_id: 'lead' },
+                { object_slug: 'accounts', record_id: 'account' },
               ],
+            },
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should only track events that include relations when the user is not identified', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.track({ event_name: 'Discarded Page Viewed' });
+      await client.track({ event_name: 'Page Viewed', relations: [{ object_slug: 'users', record_id: 'user' }] });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              relations: [{ object_slug: 'users', record_id: 'user' }],
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
             },
           ],
         }),
@@ -258,6 +191,8 @@ describe('Bigdelta', () => {
         disableTrackingByDefault: true,
       });
 
+      await client.identify({ users: 'user' });
+
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalled();
@@ -265,6 +200,8 @@ describe('Bigdelta', () => {
 
     it('should toggle tracking using enable and disable calls', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -281,6 +218,8 @@ describe('Bigdelta', () => {
 
     it('should include default properties on page view track', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
 
       await client.trackPageView();
 
@@ -307,7 +246,7 @@ describe('Bigdelta', () => {
                 $utm_campaign: 'campaign',
                 $gclid: 'id',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -321,6 +260,8 @@ describe('Bigdelta', () => {
 
     it('should use custom name and include override properties on page view track', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
 
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
@@ -348,7 +289,7 @@ describe('Bigdelta', () => {
                 $gclid: 'id',
                 my_prop: 'prop_value',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -365,6 +306,8 @@ describe('Bigdelta', () => {
         trackingKey: 'key',
         defaultTrackingConfig: { marketingAttribution: false, sessions: { enabled: false } },
       });
+
+      await client.identify({ users: 'user' });
 
       await client.trackPageView();
 
@@ -389,7 +332,7 @@ describe('Bigdelta', () => {
                 $path: '/path/index.html',
                 $query: '?foo=bar&utm_campaign=campaign&gclid=id',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -408,6 +351,8 @@ describe('Bigdelta', () => {
         defaultTrackingConfig: { sessions: { enabled: false } },
       });
 
+      await client.identify({ users: 'user' });
+
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
@@ -425,7 +370,7 @@ describe('Bigdelta', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
               track_ip_and_geolocation: false,
             },
           ],
@@ -438,8 +383,10 @@ describe('Bigdelta', () => {
       });
     });
 
-    it('should save anonymous id to storage', async () => {
+    it('should save user id to storage', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
 
       await client.track({ event_name: 'Page Viewed' });
 
@@ -452,6 +399,8 @@ describe('Bigdelta', () => {
         trackingKey: 'key',
         defaultTrackingConfig: { sessions: { enabled: true, excludeEvents: ['Excluded Event'] } },
       });
+
+      await client.identify({ users: 'user' });
 
       const now = DateTime.utc(2024, 1, 1, 0, 0, 0);
 
@@ -489,7 +438,7 @@ describe('Bigdelta', () => {
                 $gclid: 'id',
               },
               relations: [
-                { object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' },
+                { object_slug: 'users', record_id: 'user' },
                 {
                   object_slug: 'sessions',
                   record_id: sessionId,
@@ -540,7 +489,7 @@ describe('Bigdelta', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -567,7 +516,7 @@ describe('Bigdelta', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' }],
+              relations: [{ object_slug: 'users', record_id: 'user' }],
             },
           ],
         }),
@@ -594,7 +543,7 @@ describe('Bigdelta', () => {
                 $browser_version: '124.0',
               },
               relations: [
-                { object_slug: 'anonymous', record_id: 'f3f7e6b2-0074-457b-9197-6eae16aedf13' },
+                { object_slug: 'users', record_id: 'user' },
                 {
                   object_slug: 'sessions',
                   record_id: sessionId,
@@ -669,18 +618,6 @@ describe('Bigdelta', () => {
         },
         method: 'POST',
       });
-    });
-
-    it('should not track bots', async () => {
-      Object.defineProperty(global.window.navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-      });
-
-      const client = new Bigdelta({ trackingKey: 'key' });
-
-      await client.trackPageView();
-
-      expect(global.fetch).not.toHaveBeenCalled();
     });
   });
 });
