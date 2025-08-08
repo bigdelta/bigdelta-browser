@@ -28,8 +28,7 @@ Import the package into your project and initialize it with your tracking key.
 ```ts
 import { Bigdelta } from '@bigdelta/bigdelta-browser';
 
-const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, 
-            singlePageAppTracking: 'any' }, forms: { enabled: true }} });
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { pageViews: { enabled: true, singlePageAppTracking: 'any' }} });
 ```
 
 ### Installing via script tag
@@ -43,12 +42,15 @@ This SDK is also available through CDN.
 <script type="text/javascript">
     const client = new Bigdelta({
         trackingKey: '<TRACKING_KEY>',
-        defaultTrackingConfig: {pageViews: {enabled: true, singlePageAppTracking: 'any'}, forms: {enabled: true}}
+        defaultTrackingConfig: {pageViews: {enabled: true, singlePageAppTracking: 'any'}}
     });
 </script>
 ```
 
 ## Track behavior
+
+**Important:** Events are discarded and not published to Bigdelta until the user is identified (i.e., `client.identify()` is called with relations) or relationships are explicitly provided with every event. Events are only submitted once relations have been established.
+
 ### Send event
 You can track an event by calling `client.track()` with the event name and its properties.
 
@@ -68,29 +70,6 @@ The following properties are default properties automatically included with ever
 - Browser Version
 
 All events are sent via HTTPS.
-
-### Track form submissions
-
-Form submissions can be automatically tracked by enabling the `defaultTrackingConfig.forms` during client creation (disabled by default), as shown below:
-```html
-const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true }}});
-```
-
-No additional code is needed to capture form submissions. Bigdelta takes care of it automatically. This applies to both single-page applications and traditional websites.
-
-The form data is included as properties in the tracked event.
-
-By default, all forms and their input fields are tracked, except those with the `type="password"`. You can customize this behavior using the `defaultTrackingConfig.forms.excludedFormIds` and `defaultTrackingConfig.forms.excludedInputFieldNames` options, as shown below:
-
-```html
-// Track all forms except the one with the ID 'my-sensitive-form'.
-const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true, 
-    excludedFormIds: ['my-sensitive-form'] }}});
-
-// Track all input fields except the one with the name 'my-sensitive-field'. 
-const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { forms: { enabled: true, 
-        excludedInputFieldNames: ['my-sensitive-field'] }}});
-```
 
 #### Important Notes
 - **Data Sensitivity**: Be careful not to collect sensitive user information without consent.
@@ -170,7 +149,7 @@ const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConf
 ```
 
 ### Manage relations
-Bigdelta automatically manages relationships between anonymous and identified users during tracking. However, if your events are related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
+Bigdelta automatically adds relationships provided during identification to each tracked event. However, if your events are also related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
 ```html
 client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ object_slug: 'invoice', record_id: '63f2164c-2000-4f6c-b377-107368566222' }] });
 ```
@@ -184,22 +163,10 @@ If a certain event is supposed to change related record properties, you can easi
 client.track({ event_name: 'My Custom Event', properties: { my_property: 'property_value' }, relations: [{ object_slug: 'invoice', record_id: '63f2164c-2000-4f6c-b377-107368566222', set: { 'coupon': 'PROMO10' }, set_once: { 'invoice_no': 'IN001' }}]});
 ```
 
-### Exclude bot traffic
-
-By default, well-known bots are filtered out by the Bigdelta SDK. However, there may be instances where specific bots not included in the default filter are hitting your site and affecting your data. If you notice such behavior, you can identify a common pattern in the user agent and disable tracking for these bots using the Bigdelta SDK.
-
-Here’s how you can disable tracking for a specific bot:
-
-```html
-if (window.navigator.userAgent.toLowerCase().includes('specificbot')) {
-    client.disableTracking();
-}
-```
-
-In this example, if the user agent string contains 'specificbot', tracking is disabled by calling `client.disableTracking()`. This ensures that data from these specific bots does not affect your analytics.
-
 ## Identify users & companies
 You can manage user identity through the `client.identify()` and `client.reset()` methods. Utilizing these methods correctly ensures that events are appropriately linked to the user, regardless of their transitions across devices and browsers.
+
+**Important:** You must call `client.identify()` with relations before any events will be published to Bigdelta. Without identification relations, all tracking calls will be discarded.
 
 ### Identify
 You can identify a user with a unique ID to monitor their activity across devices and associate them with their events. Once you have the current user's identity, you should call `identify()` as shown below, typically after they log in or sign up:

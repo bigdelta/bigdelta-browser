@@ -5,15 +5,13 @@ import {
   ClientState,
   Config,
   DefaultTrackingConfig,
-  FormsConfig,
   FullConfig,
   PageViewsConfig,
   SessionsConfig,
 } from './model/config';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
-import { getBrowserWithVersion, getDeviceType, getOperatingSystem, isBotUserAgent } from './utils/userAgentParser';
+import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
-import { FormTracker } from './utils/formTracker';
 import { Session } from './model/session';
 import { DateTime } from 'luxon';
 import { initialSessionProperties, sessionProperties } from './utils/sessionMapper';
@@ -51,10 +49,6 @@ export class Bigdelta {
     this.identification = this.persistentStorage.loadIdentification();
     this.session = this.persistentStorage.loadSession();
 
-    if (isBotUserAgent(window.navigator.userAgent)) {
-      this.disableTracking();
-    }
-
     this.initDefaultTracking(config.defaultTrackingConfig);
   }
 
@@ -63,16 +57,19 @@ export class Bigdelta {
       return;
     }
 
-    const events = Array.isArray(payload) ? payload : [payload];
-
-    if (events.length === 0) {
-      return;
-    }
-
     try {
       this.assertConfig();
 
+      const providedEvents = Array.isArray(payload) ? payload : [payload];
       const identificationRelations = this.getIdentificationRelations();
+
+      const events = providedEvents.filter(
+        (event) => event.relations?.length > 0 || identificationRelations.length > 0,
+      );
+
+      if (events.length === 0) {
+        return;
+      }
 
       const browserWithVersion = window ? getBrowserWithVersion(window.navigator.userAgent) : undefined;
       const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
@@ -148,12 +145,13 @@ export class Bigdelta {
     return await this.trackWithPageContext(currentPageContext(), payload);
   }
 
-  public async identify(identification: Identification, config?: RequestInit) {
+  public async identify(identification: Identification) {
     if (!this.clientState.trackingEnabled) {
       return;
     }
 
     const keys = Object.keys(identification || {});
+
     if (keys.length === 0) {
       return;
     }
@@ -167,10 +165,6 @@ export class Bigdelta {
       agg[key] = value === null ? null : value.toString();
       return agg;
     }, this.identification || {});
-
-    await this.identifyCallout(this.identification.anonymous, this.identification.users, config);
-
-    delete this.identification.anonymous;
 
     this.persistentStorage.saveIdentification(this.identification);
   }
@@ -293,31 +287,6 @@ export class Bigdelta {
     });
   }
 
-  private async identifyCallout(anonymousId: string, userId: string, config?: RequestInit) {
-    try {
-      if (!anonymousId || !userId) {
-        return;
-      }
-
-      this.assertConfig();
-
-      await fetch(`${this.config.baseURL}/v1/ingestion/identify`, {
-        ...this.config.requestConfig,
-        ...config,
-        method: 'POST',
-        headers: {
-          ...this.config.requestConfig?.headers,
-          ...config?.headers,
-          'x-tracking-key': this.config.trackingKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ identify: [{ anonymous: anonymousId, users: userId }] }),
-      });
-    } catch (e) {
-      console.warn('Error occurred when making identify call', e);
-    }
-  }
-
   private async setRecordPropertiesCallout(records: SetRecordProperties[], config?: RequestInit) {
     try {
       if (!records || records.length === 0) {
@@ -345,10 +314,7 @@ export class Bigdelta {
 
   private getIdentificationRelations(): Relation[] {
     if (!this.identification) {
-      this.identification = {
-        anonymous: uuid(),
-      };
-
+      this.identification = {};
       this.persistentStorage.saveIdentification(this.identification);
     }
 
@@ -372,10 +338,6 @@ export class Bigdelta {
 
     if (config?.pageViews?.enabled) {
       await this.initPageViewsTracking(config?.pageViews);
-    }
-
-    if (config?.forms?.enabled) {
-      this.initFormsTracking(config?.forms);
     }
   }
 
@@ -438,18 +400,6 @@ export class Bigdelta {
         }.bind(this),
       );
     }
-  }
-
-  private initFormsTracking(config: FormsConfig) {
-    new FormTracker(
-      config?.excludedFormIds || [],
-      config?.excludedInputFieldNames || [],
-      async (formId: string, formData: Record<string, string>) =>
-        await this.trackWithPageContext(currentPageContext(), {
-          event_name: 'Form Submitted',
-          properties: { $form_data: formData, $form_id: formId },
-        }),
-    ).init();
   }
 
   private assertConfig() {
