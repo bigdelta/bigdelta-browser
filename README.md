@@ -49,7 +49,7 @@ This SDK is also available through CDN.
 
 ## Track behavior
 
-**Important:** Events are discarded and not published to Bigdelta until the user is identified (i.e., `client.identify()` is called with relations). Events are only submitted after identification relations are established.
+**Important:** Events are discarded and not published to Bigdelta until the user is identified (i.e., `client.identify()` is called with relations) or relationships are explicitly provided with every event. Events are only submitted once relations have been established.
 
 ### Send event
 You can track an event by calling `client.track()` with the event name and its properties.
