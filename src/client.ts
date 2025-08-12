@@ -36,6 +36,7 @@ export class Bigdelta {
   private identification: Identification;
   private clientState: ClientState;
   private session: Session;
+  private presenceIntervalId: number | null = null;
 
   constructor(config: Config) {
     this.config = {
@@ -50,6 +51,7 @@ export class Bigdelta {
     this.session = this.persistentStorage.loadSession();
 
     this.initDefaultTracking(config.defaultTrackingConfig);
+    this.startPresenceTracking();
   }
 
   public async track(payload: EventPayload | EventPayload[], config?: RequestInit) {
@@ -167,6 +169,8 @@ export class Bigdelta {
     }, this.identification || {});
 
     this.persistentStorage.saveIdentification(this.identification);
+
+    await this.updatePresence();
   }
 
   public getIdentifier(key: string) {
@@ -182,6 +186,7 @@ export class Bigdelta {
   }
 
   public async reset() {
+    this.stopPresenceTracking();
     this.identification = null;
     this.persistentStorage.saveIdentification(null);
     this.session = null;
@@ -189,6 +194,7 @@ export class Bigdelta {
   }
 
   public disableTracking() {
+    this.stopPresenceTracking();
     this.setState({
       ...this.clientState,
       trackingEnabled: false,
@@ -200,10 +206,56 @@ export class Bigdelta {
       ...this.clientState,
       trackingEnabled: true,
     });
+    this.startPresenceTracking();
   }
 
   public getSessionId() {
     return this.session?.id;
+  }
+
+  private async updatePresence() {
+    const identificationRelations = this.getIdentificationRelations();
+    
+    if (identificationRelations.length === 0) {
+      return;
+    }
+
+    try {
+      this.assertConfig();
+
+      await fetch(`${this.config.baseURL}/v1/presence`, {
+        ...this.config.requestConfig,
+        method: 'POST',
+        headers: {
+          ...this.config.requestConfig?.headers,
+          'x-tracking-key': this.config.trackingKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'online',
+          relations: identificationRelations,
+        }),
+      });
+    } catch (e) {
+      console.warn('Error occurred when making presence call', e);
+    }
+  }
+
+  private startPresenceTracking() {
+    if (typeof window === 'undefined' || this.presenceIntervalId !== null) {
+      return;
+    }
+
+    this.presenceIntervalId = window.setInterval(async () => {
+      await this.updatePresence();
+    }, 30000);
+  }
+
+  private stopPresenceTracking() {
+    if (this.presenceIntervalId !== null) {
+      clearInterval(this.presenceIntervalId);
+      this.presenceIntervalId = null;
+    }
   }
 
   private tryUpdateSessionState(events: EventPayload[]): SessionInfo {
