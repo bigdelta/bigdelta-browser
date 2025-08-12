@@ -202,18 +202,18 @@ describe('Bigdelta', () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.identify({ users: 'user' });
-
       await client.track({ event_name: 'Page Viewed' });
 
       client.disableTracking();
 
+      await client.track({ event_name: 'Page Viewed' });
       await client.track({ event_name: 'Page Viewed' });
 
       client.enableTracking();
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
     it('should include default properties on page view track', async () => {
@@ -414,7 +414,19 @@ describe('Bigdelta', () => {
 
       const sessionId = client.getSessionId();
 
-      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'https://eu.api.bigdelta.com/v1/presence', {
+        body: JSON.stringify({
+          status: 'online',
+          relations: [{ object_slug: 'users', record_id: 'user' }],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -474,7 +486,7 @@ describe('Bigdelta', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -500,7 +512,7 @@ describe('Bigdelta', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
@@ -527,7 +539,7 @@ describe('Bigdelta', () => {
         method: 'POST',
       });
 
-      expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+      expect(global.fetch).toHaveBeenNthCalledWith(5, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
             {
