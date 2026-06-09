@@ -18,6 +18,8 @@ import { initialSessionProperties, sessionProperties } from './utils/sessionMapp
 import { SetRecordProperties } from './model/record';
 
 const PAGE_VIEW_EVENT_NAME = 'Page View';
+const PRESENCE_INTERVAL_MS = 30000;
+const PRESENCE_ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click'] as const;
 
 interface PageContext {
   location: Location;
@@ -36,7 +38,13 @@ export class Bigdelta {
   private identification: Identification;
   private clientState: ClientState;
   private session: Session;
+
   private presenceIntervalId: number | null = null;
+  private lastActivityAt: DateTime = DateTime.now();
+
+  private readonly handleActivity = () => {
+    this.lastActivityAt = DateTime.now();
+  };
 
   constructor(config: Config) {
     this.config = {
@@ -215,8 +223,12 @@ export class Bigdelta {
 
   private async updatePresence() {
     const identificationRelations = this.getIdentificationRelations();
-    
+
     if (identificationRelations.length === 0) {
+      return;
+    }
+
+    if (DateTime.now().diff(this.lastActivityAt).toMillis() > PRESENCE_INTERVAL_MS) {
       return;
     }
 
@@ -246,9 +258,12 @@ export class Bigdelta {
       return;
     }
 
+    this.lastActivityAt = DateTime.now();
+    this.registerActivityListeners();
+
     this.presenceIntervalId = window.setInterval(async () => {
       await this.updatePresence();
-    }, 30000);
+    }, PRESENCE_INTERVAL_MS);
   }
 
   private stopPresenceTracking() {
@@ -256,6 +271,27 @@ export class Bigdelta {
       clearInterval(this.presenceIntervalId);
       this.presenceIntervalId = null;
     }
+    this.removeActivityListeners();
+  }
+
+  private registerActivityListeners() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    PRESENCE_ACTIVITY_EVENTS.forEach((event) => {
+      window.addEventListener(event, this.handleActivity, { passive: true });
+    });
+  }
+
+  private removeActivityListeners() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    PRESENCE_ACTIVITY_EVENTS.forEach((event) => {
+      window.removeEventListener(event, this.handleActivity);
+    });
   }
 
   private tryUpdateSessionState(events: EventPayload[]): SessionInfo {
