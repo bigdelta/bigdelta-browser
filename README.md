@@ -119,6 +119,10 @@ const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConf
     marketingAttribution: false }});
 ```
 
+#### First-touch attribution
+
+The library also captures **first-touch attribution** on the very first Page View, even while the visitor is still anonymous. The first touch — the UTM parameters, the advertising click IDs, the referring domain and a derived channel type — is stored locally and never overwritten by later visits. Once you `identify` the visitor, it is attached to each identified record (e.g. user and account) using `set_once`, so the original acquisition source is recorded on the record only if it was not already set. On records these are written as plain properties (`initial_utm_source`, `initial_utm_medium`, `initial_utm_campaign`, `initial_utm_term`, `initial_utm_content`, `initial_referring_domain`, the `initial_*` click IDs and `channel_type`). This is disabled together with `marketingAttribution`, and cleared by `reset`.
+
 ### Ensure idempotence
 
 By default, all events, even if identical, are treated as unique and recorded in the system each time they are sent. However, you can specify a special property, `$deduplication_id` (of type `string`), to assign a unique identifier to an event. It allows deduplication of events that are accidentally sent multiple times. All subsequent events with the same `$deduplication_id` will be ignored and not recorded in the system.

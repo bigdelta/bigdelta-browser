@@ -10,6 +10,7 @@ import {
   SessionsConfig,
 } from './model/config';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
+import { initialAttributionRecordProperties } from './utils/attribution';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
 import { Session } from './model/session';
@@ -38,6 +39,7 @@ export class Bigdelta {
   private identification: Identification;
   private clientState: ClientState;
   private session: Session;
+  private attribution: Record<string, any> | null;
 
   private presenceIntervalId: number | null = null;
   private lastActivityAt: DateTime = DateTime.now();
@@ -57,6 +59,7 @@ export class Bigdelta {
     this.clientState = this.persistentStorage.loadClientState();
     this.identification = this.persistentStorage.loadIdentification();
     this.session = this.persistentStorage.loadSession();
+    this.attribution = this.persistentStorage.loadAttribution();
 
     this.initDefaultTracking(config.defaultTrackingConfig);
     this.startPresenceTracking();
@@ -199,6 +202,8 @@ export class Bigdelta {
     this.persistentStorage.saveIdentification(null);
     this.session = null;
     this.persistentStorage.saveSession(null);
+    this.attribution = null;
+    this.persistentStorage.saveAttribution(null);
   }
 
   public disableTracking() {
@@ -357,6 +362,10 @@ export class Bigdelta {
       this.config?.defaultTrackingConfig?.marketingAttribution === undefined ||
       this.config?.defaultTrackingConfig?.marketingAttribution;
 
+    if (isAttributionEnabled) {
+      this.captureFirstTouchAttribution(pageContext);
+    }
+
     const finalProperties = {
       $title: pageContext.document.title,
       $location: pageContext.location.href,
@@ -410,6 +419,7 @@ export class Bigdelta {
       return {
         object_slug: key,
         record_id: value,
+        ...(this.attribution ? { set_once: this.attribution } : {}),
       };
     });
   }
@@ -495,7 +505,24 @@ export class Bigdelta {
     assert(!!this.config.trackingKey, 'trackingKey is required');
   }
 
-  private parseReferringDomain(referrer: string) {
+  private captureFirstTouchAttribution(pageContext: PageContext) {
+    // First-touch: only capture the earliest known attribution, never overwrite it.
+    if (this.attribution) {
+      return;
+    }
+
+    const referrer = pageContext.document ? pageContext.document.referrer : undefined;
+    const referringDomain = this.parseReferringDomain(referrer);
+
+    this.attribution = initialAttributionRecordProperties({
+      $referring_domain: referringDomain,
+      ...getMarketingAttributionParameters(pageContext.location.href),
+    });
+
+    this.persistentStorage.saveAttribution(this.attribution);
+  }
+
+  private parseReferringDomain(referrer: string | undefined) {
     try {
       if (!referrer) {
         return undefined;
