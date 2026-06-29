@@ -8,6 +8,7 @@ export const IDENTIFICATION_KEY = 'bigdelta_analytics_identification';
 export const TRACKING_ENABLED_STATE_KEY = 'bigdelta_analytics_tracking_enabled';
 export const TRACK_IP_AND_GEOLOCATION_STATE_KEY = 'bigdelta_analytics_track_ip_and_geolocation';
 export const SESSION_KEY = 'bigdelta_analytics_session';
+export const ATTRIBUTION_KEY = 'bigdelta_analytics_attribution';
 
 export class PersistentStorage {
   constructor(private config: FullConfig) {}
@@ -62,6 +63,27 @@ export class PersistentStorage {
       trackingEnabled,
       trackIpAndGeolocation,
     };
+  }
+
+  public saveAttribution(attribution: Record<string, any> | null) {
+    if (!attribution) {
+      this.remove(ATTRIBUTION_KEY);
+    } else {
+      this.persist(ATTRIBUTION_KEY, JSON.stringify(attribution));
+    }
+  }
+
+  public loadAttribution(): Record<string, any> | null {
+    const item = this.get(ATTRIBUTION_KEY);
+    if (!item || item.length < 1) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(item);
+    } catch (e) {
+      return null;
+    }
   }
 
   public saveSession(session: Session) {

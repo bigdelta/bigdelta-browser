@@ -1,7 +1,7 @@
 import { Bigdelta } from '../src';
 import Cookies from 'js-cookie';
 import { getCookieDomain } from '../src/utils/getCookieDomain';
-import { IDENTIFICATION_KEY, TRACKING_ENABLED_STATE_KEY } from '../src/utils/persistentStorage';
+import { IDENTIFICATION_KEY, PersistentStorage, TRACKING_ENABLED_STATE_KEY } from '../src/utils/persistentStorage';
 import { DateTime, Settings } from 'luxon';
 
 describe('Bigdelta', () => {
@@ -246,7 +246,18 @@ describe('Bigdelta', () => {
                 $utm_campaign: 'campaign',
                 $gclid: 'id',
               },
-              relations: [{ object_slug: 'users', record_id: 'user' }],
+              relations: [
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -289,7 +300,18 @@ describe('Bigdelta', () => {
                 $gclid: 'id',
                 my_prop: 'prop_value',
               },
-              relations: [{ object_slug: 'users', record_id: 'user' }],
+              relations: [
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -450,7 +472,16 @@ describe('Bigdelta', () => {
                 $gclid: 'id',
               },
               relations: [
-                { object_slug: 'users', record_id: 'user' },
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
                 {
                   object_slug: 'sessions',
                   record_id: sessionId,
@@ -501,7 +532,18 @@ describe('Bigdelta', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ object_slug: 'users', record_id: 'user' }],
+              relations: [
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -528,7 +570,18 @@ describe('Bigdelta', () => {
                 $browser: 'Google Chrome',
                 $browser_version: '124.0',
               },
-              relations: [{ object_slug: 'users', record_id: 'user' }],
+              relations: [
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
+              ],
             },
           ],
         }),
@@ -555,7 +608,16 @@ describe('Bigdelta', () => {
                 $browser_version: '124.0',
               },
               relations: [
-                { object_slug: 'users', record_id: 'user' },
+                {
+                  object_slug: 'users',
+                  record_id: 'user',
+                  set_once: {
+                    initial_utm_campaign: 'campaign',
+                    initial_referring_domain: 'www.google.com',
+                    initial_gclid: 'id',
+                    channel_type: 'Paid Search',
+                  },
+                },
                 {
                   object_slug: 'sessions',
                   record_id: sessionId,
@@ -624,6 +686,146 @@ describe('Bigdelta', () => {
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/records', {
         body: JSON.stringify({ records }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should capture first-touch attribution while anonymous and set it on identified records', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      // Anonymous page view: the event itself is dropped, but first-touch attribution is captured.
+      await client.trackPageView();
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        'https://eu.api.bigdelta.com/v1/ingestion/events',
+        expect.anything(),
+      );
+
+      await client.identify({ users: 'user', accounts: 'account' });
+      await client.track({ event_name: 'Order Completed' });
+
+      const attribution = {
+        initial_utm_campaign: 'campaign',
+        initial_referring_domain: 'www.google.com',
+        initial_gclid: 'id',
+        channel_type: 'Paid Search',
+      };
+
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Order Completed',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
+              relations: [
+                { object_slug: 'users', record_id: 'user', set_once: attribution },
+                { object_slug: 'accounts', record_id: 'account', set_once: attribution },
+              ],
+            },
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should not overwrite first-touch attribution on subsequent page views', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      const saveAttribution = jest.spyOn(PersistentStorage.prototype, 'saveAttribution');
+
+      await client.trackPageView();
+      await client.trackPageView();
+      await client.trackPageView();
+
+      // First-touch is frozen: attribution is persisted only once, on the first capture.
+      expect(saveAttribution).toHaveBeenCalledTimes(1);
+
+      saveAttribution.mockRestore();
+    });
+
+    it('should not capture attribution when marketing attribution is disabled', async () => {
+      const client = new Bigdelta({
+        trackingKey: 'key',
+        defaultTrackingConfig: { marketingAttribution: false, sessions: { enabled: false } },
+      });
+
+      await client.trackPageView();
+      await client.identify({ users: 'user' });
+      await client.track({ event_name: 'Order Completed' });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Order Completed',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
+              relations: [{ object_slug: 'users', record_id: 'user' }],
+            },
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should clear attribution on reset', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.trackPageView();
+      await client.identify({ users: 'user' });
+
+      await client.reset();
+
+      await client.identify({ users: 'user2' });
+      await client.track({ event_name: 'Order Completed' });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Order Completed',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
+              relations: [{ object_slug: 'users', record_id: 'user2' }],
+            },
+          ],
+        }),
         headers: {
           'Content-Type': 'application/json',
           'x-tracking-key': 'key',
