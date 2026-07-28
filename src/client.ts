@@ -21,6 +21,9 @@ import { SetRecordProperties } from './model/record';
 const PAGE_VIEW_EVENT_NAME = 'Page View';
 const PRESENCE_INTERVAL_MS = 30000;
 const PRESENCE_ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click'] as const;
+const USERS_OBJECT_SLUG = 'users';
+const ANONYMOUS_IDENTIFICATION_KEY = 'anonymous';
+const ANONYMOUS_RECORD_PROPERTY = 'is_anonymous';
 
 interface PageContext {
   location: Location;
@@ -73,16 +76,13 @@ export class Bigdelta {
     try {
       this.assertConfig();
 
-      const providedEvents = Array.isArray(payload) ? payload : [payload];
-      const identificationRelations = this.getIdentificationRelations();
-
-      const events = providedEvents.filter(
-        (event) => event.relations?.length > 0 || identificationRelations.length > 0,
-      );
+      const events = Array.isArray(payload) ? payload : [payload];
 
       if (events.length === 0) {
         return;
       }
+
+      const identificationRelations = this.getIdentificationRelations();
 
       const browserWithVersion = window ? getBrowserWithVersion(window.navigator.userAgent) : undefined;
       const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
@@ -181,6 +181,14 @@ export class Bigdelta {
 
     this.persistentStorage.saveIdentification(this.identification);
 
+    const anonymousId = this.identification[ANONYMOUS_IDENTIFICATION_KEY];
+    const userId = this.identification[USERS_OBJECT_SLUG];
+
+    if (anonymousId && userId && (await this.identifyCallout(anonymousId, userId))) {
+      delete this.identification[ANONYMOUS_IDENTIFICATION_KEY];
+      this.persistentStorage.saveIdentification(this.identification);
+    }
+
     await this.updatePresence();
   }
 
@@ -250,7 +258,7 @@ export class Bigdelta {
         },
         body: JSON.stringify({
           status: 'online',
-          relations: identificationRelations,
+          relations: identificationRelations.map(({ object_slug, record_id }) => ({ object_slug, record_id })),
         }),
       });
     } catch (e) {
@@ -384,6 +392,32 @@ export class Bigdelta {
     });
   }
 
+  private async identifyCallout(anonymousId: string, userId: string, config?: RequestInit): Promise<boolean> {
+    try {
+      this.assertConfig();
+
+      const response = await fetch(`${this.config.baseURL}/v1/ingestion/identify`, {
+        ...this.config.requestConfig,
+        ...config,
+        method: 'POST',
+        headers: {
+          ...this.config.requestConfig?.headers,
+          ...config?.headers,
+          'x-tracking-key': this.config.trackingKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ anonymous: anonymousId, users: userId }),
+      });
+
+      const result = await response.json();
+
+      return result?.completed === true;
+    } catch (e) {
+      console.warn('Error occurred when making identify call', e);
+      return false;
+    }
+  }
+
   private async setRecordPropertiesCallout(records: SetRecordProperties[], config?: RequestInit) {
     try {
       if (!records || records.length === 0) {
@@ -415,13 +449,32 @@ export class Bigdelta {
       this.persistentStorage.saveIdentification(this.identification);
     }
 
-    return Object.entries(this.identification).map(([key, value]) => {
-      return {
-        object_slug: key,
-        record_id: value,
-        ...(this.attribution ? { set_once: this.attribution } : {}),
-      };
-    });
+    const isAnonymous = !this.identification[USERS_OBJECT_SLUG];
+
+    if (isAnonymous && !this.identification[ANONYMOUS_IDENTIFICATION_KEY]) {
+      this.identification[ANONYMOUS_IDENTIFICATION_KEY] = uuid();
+      this.persistentStorage.saveIdentification(this.identification);
+    }
+
+    const relations = Object.entries(this.identification)
+      .filter(([key, value]) => key !== ANONYMOUS_IDENTIFICATION_KEY && !!value)
+      .map(([key, value]) => {
+        return {
+          object_slug: key,
+          record_id: value,
+          ...(this.attribution ? { set_once: this.attribution } : {}),
+        };
+      });
+
+    if (isAnonymous) {
+      relations.push({
+        object_slug: USERS_OBJECT_SLUG,
+        record_id: this.identification[ANONYMOUS_IDENTIFICATION_KEY],
+        set_once: { ...(this.attribution ?? {}), [ANONYMOUS_RECORD_PROPERTY]: true },
+      });
+    }
+
+    return relations;
   }
 
   private setState(clientState: ClientState) {

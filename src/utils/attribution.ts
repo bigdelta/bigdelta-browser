@@ -14,10 +14,7 @@ const CLICK_ID_PROPERTIES = [
   '$wbraid',
 ];
 
-const buildAttribution = (
-  properties: Record<string, any> | null | undefined,
-  prefix: string,
-): Record<string, any> => {
+const buildAttribution = (properties: Record<string, any> | null | undefined, prefix: string): Record<string, any> => {
   properties = properties || {};
   return {
     [`${prefix}initial_utm_source`]: properties['$utm_source'],
@@ -48,9 +45,8 @@ const buildAttribution = (
 };
 
 // System ($-prefixed) attribution, used on events and the session record.
-export const initialAttributionProperties = (
-  properties: Record<string, any> | null | undefined,
-): Record<string, any> => buildAttribution(properties, '$');
+export const initialAttributionProperties = (properties: Record<string, any> | null | undefined): Record<string, any> =>
+  buildAttribution(properties, '$');
 
 // Plain-named attribution, used as set_once on identified user/account records.
 export const initialAttributionRecordProperties = (
