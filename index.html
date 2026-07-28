@@ -3,10 +3,76 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Bigdelta Browser SDK</title>
     <script type="module" src="/src/main.ts"></script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 24px; max-width: 720px; }
+        h1 { font-size: 18px; margin: 0 0 4px; }
+        p.lead { margin: 0 0 20px; color: #666; font-size: 13px; }
+        section { border: 1px solid #e5e5e5; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; }
+        h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #666; margin: 0 0 8px; }
+        button { font: inherit; font-size: 13px; padding: 6px 11px; margin: 0 6px 6px 0; border: 1px solid #ccc;
+                 border-radius: 5px; background: #fff; cursor: pointer; }
+        button:hover { background: #f4f4f4; }
+        button.danger { border-color: #d3a29a; color: #8a3a2c; }
+        pre { background: #f7f7f7; border-radius: 5px; padding: 12px; font-size: 12px; margin-bottom: 12px;
+              white-space: pre-wrap; word-break: break-all; }
+    </style>
 </head>
 <body>
-<button onclick="window.bigdeltaClient.identify({ users: 'user' })">identify</button>
-<button onclick="window.bigdeltaClient.track({ event_name: 'Page Viewed' })">track</button>
+<h1>Bigdelta Browser SDK</h1>
+<p class="lead">Local page for exercising the SDK against a running API. Configure the tracking key and base URL in <code>src/main.ts</code>.</p>
+
+<section>
+    <h2>Current state</h2>
+    <pre id="state">—</pre>
+    <button onclick="window.renderState()">Refresh</button>
+</section>
+
+<section>
+    <h2>Track</h2>
+    <button onclick="window.run(() => window.bigdeltaClient.trackPageView())">Page view</button>
+    <button onclick="window.run(() => window.bigdeltaClient.track({ event_name: 'Button Clicked' }))">Custom event</button>
+    <button onclick="window.run(() => window.bigdeltaClient.track({ event_name: 'Order Completed', relations: [{ object_slug: 'invoices', record_id: 'invoice-1' }] }))">Event with relation</button>
+</section>
+
+<section>
+    <h2>Identify</h2>
+    <button onclick="window.run(() => window.bigdeltaClient.identify({ users: 'user-1' }))">User</button>
+    <button onclick="window.run(() => window.bigdeltaClient.identify({ accounts: 'account-1' }))">Account</button>
+    <button onclick="window.run(() => window.bigdeltaClient.identify({ users: 'user-1', accounts: 'account-1' }))">User and account</button>
+    <button onclick="window.run(() => window.bigdeltaClient.identify({ users: null }))">Clear user</button>
+</section>
+
+<section>
+    <h2>Record properties</h2>
+    <button onclick="window.run(() => window.bigdeltaClient.setRecordProperties({ id: 'user-1', slug: 'users', properties: { set: { full_name: 'Test User' } } }))">Set on user-1</button>
+</section>
+
+<section>
+    <h2>Client</h2>
+    <button onclick="window.run(() => window.bigdeltaClient.disableTracking())">Disable tracking</button>
+    <button onclick="window.run(() => window.bigdeltaClient.enableTracking())">Enable tracking</button>
+    <button class="danger" onclick="window.run(() => window.bigdeltaClient.reset())">Reset</button>
+</section>
+
+<script type="module">
+  window.renderState = () => {
+    const client = window.bigdeltaClient;
+    document.getElementById('state').textContent = JSON.stringify({
+      anonymous: client.getIdentifier('anonymous') ?? null,
+      users: client.getIdentifier('users') ?? null,
+      accounts: client.getIdentifier('accounts') ?? null,
+      session_id: client.getSessionId() ?? null,
+    }, null, 2);
+  };
+
+  window.run = async (action) => {
+    await action();
+    window.renderState();
+  };
+
+  window.renderState();
+</script>
 </body>
 </html>

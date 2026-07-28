@@ -4,12 +4,15 @@ import { getCookieDomain } from '../src/utils/getCookieDomain';
 import { IDENTIFICATION_KEY, PersistentStorage, TRACKING_ENABLED_STATE_KEY } from '../src/utils/persistentStorage';
 import { DateTime, Settings } from 'luxon';
 
+const mockIdentifyCompleted = (completed: boolean) =>
+  (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({ completed }) });
+
 describe('Bigdelta', () => {
   describe('track', () => {
     const originalLuxonNow = Settings.now;
 
     beforeEach(() => {
-      global.fetch = jest.fn();
+      global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
       Object.defineProperty(global.document, 'cookie', {
         writable: true,
         value: '',
@@ -43,12 +46,154 @@ describe('Bigdelta', () => {
       Settings.now = originalLuxonNow;
     });
 
-    it('should not track unidentified users', async () => {
+    it('should track unidentified users against an anonymous users record', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
       await client.track({ event_name: 'Page Viewed' });
 
-      expect(global.fetch).toHaveBeenCalledTimes(0);
+      const anonymousId = client.getIdentifier('anonymous');
+
+      expect(anonymousId).toBeDefined();
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        body: JSON.stringify({
+          events: [
+            {
+              event_name: 'Page Viewed',
+              properties: {
+                $screen_height: 768,
+                $screen_width: 1024,
+                $referrer: 'https://www.google.com/',
+                $referring_domain: 'www.google.com',
+                $operating_system: 'Mac OS X 10.15.7',
+                $device_type: 'Desktop',
+                $browser: 'Google Chrome',
+                $browser_version: '124.0',
+              },
+              relations: [{ object_slug: 'users', record_id: anonymousId, set_once: { is_anonymous: true } }],
+            },
+          ],
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+    });
+
+    it('should reuse the same anonymous record across events', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      const anonymousId = client.getIdentifier('anonymous');
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(client.getIdentifier('anonymous')).toEqual(anonymousId);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should stop sending the anonymous relation once identified', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
+      await client.track({ event_name: 'Page Viewed' });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://eu.api.bigdelta.com/v1/ingestion/events',
+        expect.objectContaining({
+          body: expect.stringContaining(JSON.stringify([{ object_slug: 'users', record_id: 'user' }])),
+        }),
+      );
+    });
+
+    it('should merge the anonymous record into the identified user', async () => {
+      mockIdentifyCompleted(true);
+
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      const anonymousId = client.getIdentifier('anonymous');
+
+      await client.identify({ users: 'user' });
+
+      expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/identify', {
+        body: JSON.stringify({ anonymous: anonymousId, users: 'user' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-tracking-key': 'key',
+        },
+        method: 'POST',
+      });
+      expect(client.getIdentifier('anonymous')).toBeUndefined();
+    });
+
+    it('should keep the anonymous record when the merge did not complete', async () => {
+      mockIdentifyCompleted(false);
+
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.track({ event_name: 'Page Viewed' });
+
+      const anonymousId = client.getIdentifier('anonymous');
+
+      await client.identify({ users: 'user' });
+
+      expect(client.getIdentifier('anonymous')).toEqual(anonymousId);
+    });
+
+    it('should not call identify merge when there is no anonymous record', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
+      await client.identify({ users: 'user' });
+
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        'https://eu.api.bigdelta.com/v1/ingestion/identify',
+        expect.anything(),
+      );
+    });
+
+    it('should keep the anonymous users record when only accounts are identified', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ accounts: 'account' });
+      await client.track({ event_name: 'Page Viewed' });
+
+      const anonymousId = client.getIdentifier('anonymous');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://eu.api.bigdelta.com/v1/ingestion/events',
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify([
+              { object_slug: 'accounts', record_id: 'account' },
+              { object_slug: 'users', record_id: anonymousId, set_once: { is_anonymous: true } },
+            ]),
+          ),
+        }),
+      );
+    });
+
+    it('should fall back to the anonymous users record when identification is cleared', async () => {
+      const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+      await client.identify({ users: 'user' });
+      await client.identify({ users: null });
+      await client.track({ event_name: 'Page Viewed' });
+
+      const anonymousId = client.getIdentifier('anonymous');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://eu.api.bigdelta.com/v1/ingestion/events',
+        expect.objectContaining({
+          body: expect.stringContaining(
+            JSON.stringify([{ object_slug: 'users', record_id: anonymousId, set_once: { is_anonymous: true } }]),
+          ),
+        }),
+      );
     });
 
     it('should respect configuration parameters', async () => {
@@ -126,11 +271,12 @@ describe('Bigdelta', () => {
       });
     });
 
-    it('should only track events that include relations when the user is not identified', async () => {
+    it('should append the anonymous relation to events that already include relations', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
-      await client.track({ event_name: 'Discarded Page Viewed' });
-      await client.track({ event_name: 'Page Viewed', relations: [{ object_slug: 'users', record_id: 'user' }] });
+      await client.track({ event_name: 'Page Viewed', relations: [{ object_slug: 'invoice', record_id: 'invoice' }] });
+
+      const anonymousId = client.getIdentifier('anonymous');
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
@@ -138,7 +284,10 @@ describe('Bigdelta', () => {
           events: [
             {
               event_name: 'Page Viewed',
-              relations: [{ object_slug: 'users', record_id: 'user' }],
+              relations: [
+                { object_slug: 'users', record_id: anonymousId, set_once: { is_anonymous: true } },
+                { object_slug: 'invoice', record_id: 'invoice' },
+              ],
               properties: {
                 $screen_height: 768,
                 $screen_width: 1024,
@@ -697,12 +846,8 @@ describe('Bigdelta', () => {
     it('should capture first-touch attribution while anonymous and set it on identified records', async () => {
       const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
 
-      // Anonymous page view: the event itself is dropped, but first-touch attribution is captured.
+      // Anonymous page view: tracked against the anonymous users record, capturing first-touch attribution.
       await client.trackPageView();
-      expect(global.fetch).not.toHaveBeenCalledWith(
-        'https://eu.api.bigdelta.com/v1/ingestion/events',
-        expect.anything(),
-      );
 
       await client.identify({ users: 'user', accounts: 'account' });
       await client.track({ event_name: 'Order Completed' });
