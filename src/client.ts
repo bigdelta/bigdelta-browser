@@ -45,6 +45,7 @@ export class Bigdelta {
   private attribution: Record<string, any> | null;
 
   private presenceIntervalId: number | null = null;
+  private initialPresenceSent = false;
   private lastActivityAt: DateTime = DateTime.now();
 
   private readonly handleActivity = () => {
@@ -149,6 +150,10 @@ export class Bigdelta {
           events: finalEvents,
         }),
       });
+
+      if (!this.initialPresenceSent) {
+        this.initialPresenceSent = await this.updatePresence();
+      }
     } catch (e) {
       console.warn('Error occurred when making track call', e);
     }
@@ -189,7 +194,7 @@ export class Bigdelta {
       this.persistentStorage.saveIdentification(this.identification);
     }
 
-    await this.updatePresence();
+    this.initialPresenceSent = (await this.updatePresence()) || this.initialPresenceSent;
   }
 
   public getIdentifier(key: string) {
@@ -234,15 +239,15 @@ export class Bigdelta {
     return this.session?.id;
   }
 
-  private async updatePresence() {
+  private async updatePresence(): Promise<boolean> {
     const identificationRelations = this.getIdentificationRelations();
 
     if (identificationRelations.length === 0) {
-      return;
+      return false;
     }
 
     if (DateTime.now().diff(this.lastActivityAt).toMillis() > PRESENCE_INTERVAL_MS) {
-      return;
+      return false;
     }
 
     try {
@@ -261,13 +266,17 @@ export class Bigdelta {
           relations: identificationRelations.map(({ object_slug, record_id }) => ({ object_slug, record_id })),
         }),
       });
+
+      return true;
     } catch (e) {
       console.warn('Error occurred when making presence call', e);
+
+      return false;
     }
   }
 
   private startPresenceTracking() {
-    if (typeof window === 'undefined' || this.presenceIntervalId !== null) {
+    if (typeof window === 'undefined' || this.presenceIntervalId !== null || !this.clientState.trackingEnabled) {
       return;
     }
 

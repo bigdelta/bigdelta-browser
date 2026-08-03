@@ -91,7 +91,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(client.getIdentifier('anonymous')).toEqual(anonymousId);
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
     it('should stop sending the anonymous relation once identified', async () => {
@@ -278,7 +278,7 @@ describe('Bigdelta', () => {
 
       const anonymousId = client.getIdentifier('anonymous');
 
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
         body: JSON.stringify({
           events: [
