@@ -6,6 +6,8 @@ Bigdelta SDK for the browser.
 
 To get started with using Bigdelta Browser SDK, install the package to your project via npm, yarn or script loader.
 
+> Every Bigdelta workspace has its own tracking key (a UUID). All examples below use `<TRACKING_KEY>` as a placeholder - replace it with your workspace's real key.
+
 ### Installing via package manager
 
 This SDK is available as a package on npm registry named `@bigdelta/bigdelta-browser`. You can install the package using npm or yarn CLI.
