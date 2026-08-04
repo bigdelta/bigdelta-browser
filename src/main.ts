@@ -1,4 +1,5 @@
 import { Bigdelta } from './client';
+import './browser/recording';
 
 declare global {
   interface Window {
@@ -13,6 +14,9 @@ window.bigdeltaClient = new Bigdelta({
     pageViews: {
       enabled: true,
       singlePageAppTracking: 'any',
+    },
+    sessionRecording: {
+      enabled: true,
     },
   },
 });

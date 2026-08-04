@@ -10,10 +10,23 @@ export interface PageViewsConfig {
   singlePageAppTracking?: 'path' | 'path-with-query' | 'any' | 'disabled';
 }
 
+export interface SessionRecordingConfig {
+  enabled: boolean;
+  maskAllText?: boolean;
+  maskTextSelector?: string;
+  unmaskTextSelector?: string;
+  blockSelector?: string;
+  flushIntervalMs?: number;
+  maxChunkEvents?: number;
+  maxChunkSizeBytes?: number;
+  maxRecordingDurationMs?: number;
+}
+
 export interface DefaultTrackingConfig {
   pageViews?: PageViewsConfig;
   marketingAttribution?: boolean;
   sessions?: SessionsConfig;
+  sessionRecording?: SessionRecordingConfig;
 }
 
 export interface FullConfig {

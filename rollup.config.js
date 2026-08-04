@@ -42,4 +42,42 @@ module.exports = [
     ],
     plugins: [typescript({ tsconfig: './tsconfig.json' }), resolve(), terser({ keep_classnames: true })],
   },
+  {
+    input: 'src/browser/recording.ts',
+    output: [
+      {
+        file: `dist/recording.cjs.js`,
+        format: 'cjs',
+        sourcemap: true,
+      },
+      {
+        file: `dist/recording.esm.js`,
+        format: 'es',
+        sourcemap: true,
+      },
+    ],
+    plugins: [typescript({ tsconfig: './tsconfig.json' }), resolve(), commonjs()],
+  },
+  {
+    input: 'src/browser/recording.ts',
+    output: [
+      {
+        file: `dist/index.recording.iife.js`,
+        format: 'iife',
+        sourcemap: true,
+      },
+    ],
+    plugins: [typescript({ tsconfig: './tsconfig.json' }), resolve(), commonjs()],
+  },
+  {
+    input: 'src/browser/recording.ts',
+    output: [
+      {
+        file: `dist/index.recording.iife.min.js`,
+        format: 'iife',
+        sourcemap: true,
+      },
+    ],
+    plugins: [typescript({ tsconfig: './tsconfig.json' }), resolve(), commonjs(), terser({ keep_classnames: true })],
+  },
 ];
