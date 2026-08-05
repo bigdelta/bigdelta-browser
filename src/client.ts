@@ -7,8 +7,10 @@ import {
   DefaultTrackingConfig,
   FullConfig,
   PageViewsConfig,
+  SessionRecordingConfig,
   SessionsConfig,
 } from './model/config';
+import { getRecordingScriptUrl, loadScript } from './utils/scriptSource';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
 import { initialAttributionRecordProperties } from './utils/attribution';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
@@ -43,6 +45,9 @@ export class Bigdelta {
   private clientState: ClientState;
   private session: Session;
   private attribution: Record<string, any> | null;
+
+  private sessionRecorder: { start: () => void; stop: () => void } | null = null;
+  private sessionRecordingConfig: SessionRecordingConfig | null = null;
 
   private presenceIntervalId: number | null = null;
   private initialPresenceSent = false;
@@ -211,6 +216,7 @@ export class Bigdelta {
 
   public async reset() {
     this.stopPresenceTracking();
+    this.stopSessionRecording();
     this.identification = null;
     this.persistentStorage.saveIdentification(null);
     this.session = null;
@@ -221,6 +227,7 @@ export class Bigdelta {
 
   public disableTracking() {
     this.stopPresenceTracking();
+    this.stopSessionRecording();
     this.setState({
       ...this.clientState,
       trackingEnabled: false,
@@ -233,6 +240,10 @@ export class Bigdelta {
       trackingEnabled: true,
     });
     this.startPresenceTracking();
+
+    if (this.sessionRecordingConfig?.enabled) {
+      void this.initSessionRecording(this.sessionRecordingConfig);
+    }
   }
 
   public getSessionId() {
@@ -498,6 +509,53 @@ export class Bigdelta {
 
     if (config?.pageViews?.enabled) {
       await this.initPageViewsTracking(config?.pageViews);
+    }
+
+    if (config?.sessionRecording?.enabled) {
+      await this.initSessionRecording(config.sessionRecording);
+    }
+  }
+
+  private stopSessionRecording() {
+    this.sessionRecorder?.stop();
+    this.sessionRecorder = null;
+  }
+
+  private async initSessionRecording(config: SessionRecordingConfig) {
+    this.sessionRecordingConfig = config;
+
+    if (!this.clientState.trackingEnabled || this.sessionRecorder) {
+      return;
+    }
+
+    try {
+      if (!(window as any).BigdeltaSessionRecorder) {
+        await loadScript(getRecordingScriptUrl());
+      }
+
+      const RecorderConstructor = (window as any).BigdeltaSessionRecorder;
+
+      if (!RecorderConstructor) {
+        console.warn('Session recording bundle loaded but did not register a recorder');
+
+        return;
+      }
+
+      this.sessionRecorder = new RecorderConstructor({
+        ...config,
+        baseURL: this.config.baseURL,
+        trackingKey: this.config.trackingKey,
+        getSessionId: () => this.session?.id,
+        getRelationIds: () =>
+          this.getIdentificationRelations().reduce<Record<string, string>>(
+            (relationIds, { object_slug, record_id }) => ({ ...relationIds, [object_slug]: record_id }),
+            {},
+          ),
+      });
+
+      this.sessionRecorder.start();
+    } catch (e) {
+      console.warn('Error occurred when starting session recording', e);
     }
   }
 

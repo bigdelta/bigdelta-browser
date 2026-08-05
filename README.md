@@ -154,6 +154,68 @@ If session tracking is not needed, it can be disabled, as shown below:
 const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessions: { enabled: false } }});
 ```
 
+### Record sessions
+
+Session recording captures the DOM of your pages so you can replay what a visitor saw and did. It is disabled by default and is enabled per client, as shown below:
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true } }});
+```
+
+Each page load produces one recording, grouped under the session it belongs to. Recording stops automatically after 30 minutes on the same page.
+
+The recorder is not part of the main bundle and is downloaded on demand when recording starts. No additional setup is required for either installation method.
+
+To bundle the recorder instead of loading it at runtime, for example when a content security policy disallows third-party scripts, import it once before creating the client:
+
+```javascript
+import '@bigdelta/bigdelta-browser/recording';
+```
+
+#### Protect user data in recordings
+
+All form inputs are masked by default. Password, email and telephone inputs are always masked and this cannot be disabled.
+
+Page text is recorded as-is. To hide it, add the `bigdelta-mask` class to an element, which replaces the text of that element and its children:
+
+```html
+<p class="bigdelta-mask">Order total: 42.00 EUR</p>
+```
+
+To leave an element out of the recording entirely, add the `bigdelta-block` class. The element is replaced with an empty placeholder of the same size:
+
+```html
+<div class="bigdelta-block"><ThirdPartyWidget /></div>
+```
+
+When you cannot change the markup, the same can be expressed with CSS selectors:
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
+    maskTextSelector: '[data-private]', blockSelector: '#intercom-container' }}});
+```
+
+To mask everything and reveal only what you choose, use `maskAllText` together with `unmaskTextSelector`:
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
+    maskAllText: true, unmaskTextSelector: '.site-navigation' }}});
+```
+
+#### Tune recording uploads
+
+Recorded events are buffered and uploaded in chunks. Two options control this:
+
+- `flushIntervalMs` — how often the buffer is uploaded. Defaults to `15000`, clamped to between `5000` and `30000`.
+- `maxRecordingDurationMs` — how long a single page load records before stopping. Defaults to `1800000` (30 minutes), clamped to between `60000` (1 minute) and `7200000` (2 hours).
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
+    flushIntervalMs: 30000, maxRecordingDurationMs: 600000 }}});
+```
+
+Values outside these ranges are clamped, not rejected.
+
 ### Manage relations
 Bigdelta automatically adds relationships provided during identification to each tracked event. However, if your events are also related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
 ```html
