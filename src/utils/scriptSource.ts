@@ -13,7 +13,7 @@ export const getRecordingScriptUrl = (): string => {
     return FALLBACK_RECORDING_SCRIPT_URL;
   }
 
-  return currentScriptSrc.replace(/\/([^/.]+)(\.[^/]*)$/, `/$1${RECORDING_BUNDLE_SUFFIX}$2`);
+  return currentScriptSrc.replace(/((?:\.(?:iife|esm|cjs|min))*\.js)(?=$|[?#])/, `${RECORDING_BUNDLE_SUFFIX}$1`);
 };
 
 export const loadScript = (src: string): Promise<void> =>
