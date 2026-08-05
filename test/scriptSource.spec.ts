@@ -24,6 +24,22 @@ describe('getRecordingScriptUrl', () => {
     ],
     ['https://example.com/js/index.iife.js', 'https://example.com/js/index.recording.iife.js'],
     ['https://example.com/js/index.iife.min.js?v=2', 'https://example.com/js/index.recording.iife.min.js?v=2'],
+    [
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.min.js',
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.recording.min.js',
+    ],
+    [
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.min.js?v=3',
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.recording.min.js?v=3',
+    ],
+    [
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.js',
+      'https://bigdelta.com/vendor/bigdelta-browser-1.29.0.recording.js',
+    ],
+    [
+      'https://bigdelta.com/vendor/bigdelta-browser.min.js',
+      'https://bigdelta.com/vendor/bigdelta-browser.recording.min.js',
+    ],
   ])('derives the recording bundle url from %s', async (src, expected) => {
     setCurrentScript(src);
 
