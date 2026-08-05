@@ -90,15 +90,19 @@ describe('SessionRecorder', () => {
   });
 
   it('flushes early once the event limit is reached', () => {
-    const recorder = buildRecorder({ maxChunkEvents: 2 });
+    const recorder = buildRecorder();
     recorder.start();
 
-    emit(buildEvent(1000));
+    for (let i = 0; i < 199; i++) {
+      emit(buildEvent(1000 + i));
+    }
+
     expect(global.fetch).not.toHaveBeenCalled();
 
-    emit(buildEvent(1001));
+    emit(buildEvent(1199));
+
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(lastRequestBody().events).toHaveLength(2);
+    expect(lastRequestBody().events).toHaveLength(200);
   });
 
   it('does not upload when there is nothing buffered', () => {
@@ -118,10 +122,46 @@ describe('SessionRecorder', () => {
       return stopRecording;
     });
 
+    const recorder = buildRecorder({ maxRecordingDurationMs: 60000 });
+    recorder.start();
+
+    jest.advanceTimersByTime(61000);
+    emit(buildEvent(Date.now()));
+
+    expect(stopRecording).toHaveBeenCalled();
+  });
+
+  it('clamps a flush interval below the minimum', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 100 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    jest.advanceTimersByTime(100);
+
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(4900);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('clamps a maximum recording duration below the minimum', () => {
+    const stopRecording = jest.fn();
+    recordMock.mockImplementation((options: { emit: (event: eventWithTime) => void }) => {
+      emit = options.emit;
+
+      return stopRecording;
+    });
+
     const recorder = buildRecorder({ maxRecordingDurationMs: 1000 });
     recorder.start();
 
     jest.advanceTimersByTime(2000);
+    emit(buildEvent(Date.now()));
+
+    expect(stopRecording).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(59000);
     emit(buildEvent(Date.now()));
 
     expect(stopRecording).toHaveBeenCalled();

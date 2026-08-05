@@ -202,6 +202,20 @@ const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConf
     maskAllText: true, unmaskTextSelector: '.site-navigation' }}});
 ```
 
+#### Tune recording uploads
+
+Recorded events are buffered and uploaded in chunks. Two options control this:
+
+- `flushIntervalMs` — how often the buffer is uploaded. Defaults to `15000`, clamped to between `5000` and `30000`.
+- `maxRecordingDurationMs` — how long a single page load records before stopping. Defaults to `1800000` (30 minutes), clamped to between `60000` (1 minute) and `7200000` (2 hours).
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
+    flushIntervalMs: 30000, maxRecordingDurationMs: 600000 }}});
+```
+
+Values outside these ranges are clamped, not rejected.
+
 ### Manage relations
 Bigdelta automatically adds relationships provided during identification to each tracked event. However, if your events are also related to other workspace objects, you should explicitly define these relationships for each event via `relations`, as shown below:
 ```html

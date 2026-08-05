@@ -1,13 +1,20 @@
 import { record } from 'rrweb';
 import type { eventWithTime } from '@rrweb/types';
 import { v4 as uuid } from 'uuid';
+import { DateTime } from 'luxon';
 import { SessionRecorderOptions } from '../model/sessionRecording';
 import { getWindowId } from '../utils/windowId';
 
 const DEFAULT_FLUSH_INTERVAL_MS = 15000;
-const DEFAULT_MAX_CHUNK_EVENTS = 200;
-const DEFAULT_MAX_CHUNK_SIZE_BYTES = 512 * 1024;
+const MIN_FLUSH_INTERVAL_MS = 5000;
+const MAX_FLUSH_INTERVAL_MS = 30000;
+
 const DEFAULT_MAX_RECORDING_DURATION_MS = 30 * 60 * 1000;
+const MIN_MAX_RECORDING_DURATION_MS = 60 * 1000;
+const MAX_MAX_RECORDING_DURATION_MS = 2 * 60 * 60 * 1000;
+
+const MAX_CHUNK_EVENTS = 200;
+const MAX_CHUNK_SIZE_BYTES = 512 * 1024;
 
 const MASK_TEXT_CLASS = 'bigdelta-mask';
 const BLOCK_CLASS = 'bigdelta-block';
@@ -22,7 +29,9 @@ const ALWAYS_MASKED_INPUTS = {
 export class SessionRecorder {
   private readonly pageLoadId = uuid();
   private readonly windowId = getWindowId();
-  private readonly startedAt = new Date().toISOString();
+  private readonly startedAt = DateTime.now().toUTC();
+  private readonly flushIntervalMs: number;
+  private readonly maxRecordingDurationMs: number;
 
   private buffer: eventWithTime[] = [];
   private bufferSizeBytes = 0;
@@ -39,7 +48,22 @@ export class SessionRecorder {
     this.flush(true);
   };
 
-  constructor(private config: SessionRecorderOptions) {}
+  constructor(private config: SessionRecorderOptions) {
+    this.flushIntervalMs = SessionRecorder.clamp(
+      config.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS,
+      MIN_FLUSH_INTERVAL_MS,
+      MAX_FLUSH_INTERVAL_MS,
+    );
+    this.maxRecordingDurationMs = SessionRecorder.clamp(
+      config.maxRecordingDurationMs ?? DEFAULT_MAX_RECORDING_DURATION_MS,
+      MIN_MAX_RECORDING_DURATION_MS,
+      MAX_MAX_RECORDING_DURATION_MS,
+    );
+  }
+
+  private static clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
+  }
 
   public start(): void {
     if (this.stopRecording) {
@@ -62,7 +86,7 @@ export class SessionRecorder {
 
     this.flushIntervalId = setInterval(() => {
       void this.flush();
-    }, this.config.flushIntervalMs ?? DEFAULT_FLUSH_INTERVAL_MS);
+    }, this.flushIntervalMs);
 
     window.addEventListener('visibilitychange', this.handleVisibilityChange);
     window.addEventListener('pagehide', this.handlePageHide);
@@ -97,8 +121,8 @@ export class SessionRecorder {
     this.buffer.push(event);
     this.bufferSizeBytes += JSON.stringify(event).length;
 
-    const reachedEventLimit = this.buffer.length >= (this.config.maxChunkEvents ?? DEFAULT_MAX_CHUNK_EVENTS);
-    const reachedSizeLimit = this.bufferSizeBytes >= (this.config.maxChunkSizeBytes ?? DEFAULT_MAX_CHUNK_SIZE_BYTES);
+    const reachedEventLimit = this.buffer.length >= MAX_CHUNK_EVENTS;
+    const reachedSizeLimit = this.bufferSizeBytes >= MAX_CHUNK_SIZE_BYTES;
 
     if (reachedEventLimit || reachedSizeLimit) {
       void this.flush();
@@ -122,9 +146,7 @@ export class SessionRecorder {
   }
 
   private hasReachedDurationLimit(): boolean {
-    const maxDurationMs = this.config.maxRecordingDurationMs ?? DEFAULT_MAX_RECORDING_DURATION_MS;
-
-    return Date.now() - Date.parse(this.startedAt) >= maxDurationMs;
+    return DateTime.now().diff(this.startedAt).toMillis() >= this.maxRecordingDurationMs;
   }
 
   private buildPayload(events: eventWithTime[]) {
@@ -132,7 +154,7 @@ export class SessionRecorder {
       session_id: this.config.getSessionId(),
       window_id: this.windowId,
       page_load_id: this.pageLoadId,
-      started_at: this.startedAt,
+      started_at: this.startedAt.toISO(),
       chunk_started_at_ms: events[0].timestamp,
       relation_ids: this.config.getRelationIds(),
       page_url: window.location.href,

@@ -17,8 +17,6 @@ export interface SessionRecordingConfig {
   unmaskTextSelector?: string;
   blockSelector?: string;
   flushIntervalMs?: number;
-  maxChunkEvents?: number;
-  maxChunkSizeBytes?: number;
   maxRecordingDurationMs?: number;
 }
 
