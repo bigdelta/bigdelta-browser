@@ -293,4 +293,17 @@ describe('SessionRecorder', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect((global.fetch as jest.Mock).mock.calls[0][1].keepalive).toEqual(true);
   });
+
+  it('drops keepalive on a final upload that would exceed the 64KiB limit', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit({ type: 3, data: { text: 'x'.repeat(70 * 1024) }, timestamp: 1000 } as unknown as eventWithTime);
+    recorder.stop();
+
+    const request = (global.fetch as jest.Mock).mock.calls[0][1];
+
+    expect(request.body.length).toBeGreaterThan(64 * 1024);
+    expect(request.keepalive).toEqual(false);
+  });
 });
