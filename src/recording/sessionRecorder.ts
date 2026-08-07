@@ -20,6 +20,8 @@ const MASK_TEXT_CLASS = 'bigdelta-mask';
 const BLOCK_CLASS = 'bigdelta-block';
 const ALL_TEXT_SELECTOR = '*';
 
+export const PAGE_CONTEXT_TAG = 'bigdelta.page_context';
+
 const ALWAYS_MASKED_INPUTS = {
   password: true,
   email: true,
@@ -37,6 +39,9 @@ export class SessionRecorder {
   private bufferSizeBytes = 0;
   private stopRecording: (() => void) | null = null;
   private flushIntervalId: ReturnType<typeof setInterval> | null = null;
+  private pagePath = '';
+  private isEmittingPageContext = false;
+  private needsPageContext = false;
 
   private readonly handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -70,6 +75,8 @@ export class SessionRecorder {
       return;
     }
 
+    this.pagePath = SessionRecorder.getPagePath();
+
     this.stopRecording =
       record({
         emit: (event) => this.onEvent(event),
@@ -90,6 +97,8 @@ export class SessionRecorder {
 
     window.addEventListener('visibilitychange', this.handleVisibilityChange);
     window.addEventListener('pagehide', this.handlePageHide);
+
+    this.emitPageContext();
   }
 
   public stop(): void {
@@ -116,6 +125,10 @@ export class SessionRecorder {
       this.stop();
 
       return;
+    }
+
+    if (this.needsPageContext || SessionRecorder.getPagePath() !== this.pagePath) {
+      this.emitPageContext();
     }
 
     this.buffer.push(event);
@@ -149,6 +162,40 @@ export class SessionRecorder {
     return DateTime.now().diff(this.startedAt).toMillis() >= this.maxRecordingDurationMs;
   }
 
+  private static getPagePath(): string {
+    return `${window.location.origin}${window.location.pathname}`;
+  }
+
+  private static getDocumentHeight(): number {
+    const { documentElement, body } = document;
+
+    return Math.max(
+      documentElement?.scrollHeight ?? 0,
+      documentElement?.offsetHeight ?? 0,
+      body?.scrollHeight ?? 0,
+      body?.offsetHeight ?? 0,
+    );
+  }
+
+  private emitPageContext(): void {
+    if (!this.stopRecording || this.isEmittingPageContext) {
+      return;
+    }
+
+    this.isEmittingPageContext = true;
+    this.needsPageContext = false;
+    this.pagePath = SessionRecorder.getPagePath();
+
+    try {
+      record.addCustomEvent(PAGE_CONTEXT_TAG, {
+        url: window.location.href,
+        documentHeight: SessionRecorder.getDocumentHeight(),
+      });
+    } finally {
+      this.isEmittingPageContext = false;
+    }
+  }
+
   private buildPayload(events: eventWithTime[]) {
     return {
       session_id: this.config.getSessionId(),
@@ -171,6 +218,7 @@ export class SessionRecorder {
 
     this.buffer = [];
     this.bufferSizeBytes = 0;
+    this.needsPageContext = true;
 
     return this.upload(JSON.stringify(this.buildPayload(events)), keepalive);
   }

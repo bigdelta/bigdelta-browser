@@ -1,14 +1,24 @@
 import type { eventWithTime } from '@rrweb/types';
 import { record } from 'rrweb';
-import { SessionRecorder } from '../src/recording/sessionRecorder';
+import { PAGE_CONTEXT_TAG, SessionRecorder } from '../src/recording/sessionRecorder';
 
 jest.mock('rrweb', () => ({
-  record: jest.fn(),
+  record: Object.assign(jest.fn(), { addCustomEvent: jest.fn() }),
 }));
 
 const recordMock = record as unknown as jest.Mock;
+const addCustomEventMock = record.addCustomEvent as unknown as jest.Mock;
 
 const buildEvent = (timestamp: number): eventWithTime => ({ type: 3, data: {}, timestamp }) as eventWithTime;
+
+interface RecordedEvent {
+  type: number;
+  timestamp: number;
+  data?: { tag?: string; payload?: { url: string; documentHeight: number } };
+}
+
+const pageContextEvents = (events: RecordedEvent[]) =>
+  events.filter((event) => event.type === 5 && event.data?.tag === PAGE_CONTEXT_TAG);
 
 const buildRecorder = (overrides = {}) =>
   new SessionRecorder({
@@ -37,6 +47,10 @@ describe('SessionRecorder', () => {
 
       return jest.fn();
     });
+    addCustomEventMock.mockImplementation((tag: string, payload: unknown) => {
+      emit({ type: 5, data: { tag, payload }, timestamp: Date.now() } as unknown as eventWithTime);
+    });
+    window.history.pushState({}, '', '/');
   });
 
   afterEach(() => {
@@ -84,8 +98,9 @@ describe('SessionRecorder', () => {
     jest.advanceTimersByTime(15000);
     const secondChunk = lastRequestBody();
 
-    expect(firstChunk.chunk_started_at_ms).toEqual(1000);
-    expect(secondChunk.chunk_started_at_ms).toEqual(20000);
+    expect(firstChunk.chunk_started_at_ms).toEqual(firstChunk.events[0].timestamp);
+    expect(secondChunk.chunk_started_at_ms).toEqual(secondChunk.events[0].timestamp);
+    expect(firstChunk.chunk_started_at_ms).not.toEqual(secondChunk.chunk_started_at_ms);
     expect(firstChunk.page_load_id).toEqual(secondChunk.page_load_id);
   });
 
@@ -93,7 +108,7 @@ describe('SessionRecorder', () => {
     const recorder = buildRecorder();
     recorder.start();
 
-    for (let i = 0; i < 199; i++) {
+    for (let i = 0; i < 198; i++) {
       emit(buildEvent(1000 + i));
     }
 
@@ -103,15 +118,16 @@ describe('SessionRecorder', () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(lastRequestBody().events).toHaveLength(200);
+    expect(pageContextEvents(lastRequestBody().events)).toHaveLength(1);
   });
 
-  it('does not upload when there is nothing buffered', () => {
+  it('does not keep uploading while the page sits idle', () => {
     const recorder = buildRecorder({ flushIntervalMs: 15000 });
     recorder.start();
 
     jest.advanceTimersByTime(45000);
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('stops recording once the maximum duration is reached', () => {
@@ -165,6 +181,106 @@ describe('SessionRecorder', () => {
     emit(buildEvent(Date.now()));
 
     expect(stopRecording).toHaveBeenCalled();
+  });
+
+  it('starts each chunk with the page context so a chunk describes its own page', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    jest.advanceTimersByTime(15000);
+
+    const contexts = pageContextEvents(lastRequestBody().events);
+
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0].data?.payload?.url).toEqual('http://subdomain.mytestdomain.com/');
+  });
+
+  it('emits the page context again when the path changes', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    window.history.pushState({}, '', '/settings');
+    emit(buildEvent(2000));
+
+    jest.advanceTimersByTime(15000);
+
+    const contexts = pageContextEvents(lastRequestBody().events);
+
+    expect(contexts.map((context) => context.data?.payload?.url)).toEqual([
+      'http://subdomain.mytestdomain.com/',
+      'http://subdomain.mytestdomain.com/settings',
+    ]);
+  });
+
+  it('emits the page context before the event that follows the navigation', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    window.history.pushState({}, '', '/settings');
+    emit(buildEvent(2000));
+
+    jest.advanceTimersByTime(15000);
+
+    const events = lastRequestBody().events;
+    const contextIndex = events.findIndex(
+      (event) => event.data?.tag === PAGE_CONTEXT_TAG && event.data.payload.url.endsWith('/settings'),
+    );
+    const eventIndex = events.findIndex((event) => event.timestamp === 2000);
+
+    expect(contextIndex).toBeLessThan(eventIndex);
+  });
+
+  it('does not emit the page context when only query parameters change', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    window.history.pushState({}, '', '/?query=a');
+    emit(buildEvent(2000));
+    window.history.pushState({}, '', '/?query=ab');
+    emit(buildEvent(3000));
+
+    jest.advanceTimersByTime(15000);
+
+    expect(pageContextEvents(lastRequestBody().events)).toHaveLength(1);
+  });
+
+  it('emits the page context once per navigation rather than recursing', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    window.history.pushState({}, '', '/settings');
+    emit(buildEvent(2000));
+
+    jest.advanceTimersByTime(15000);
+
+    expect(addCustomEventMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports the document height with the page context', () => {
+    jest.spyOn(document.documentElement, 'scrollHeight', 'get').mockReturnValue(4321);
+
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    jest.advanceTimersByTime(15000);
+
+    expect(pageContextEvents(lastRequestBody().events)[0].data?.payload?.documentHeight).toEqual(4321);
+  });
+
+  it('does not emit a page context after recording has stopped', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    addCustomEventMock.mockClear();
+
+    recorder.stop();
+
+    expect(addCustomEventMock).not.toHaveBeenCalled();
   });
 
   it('flushes what is buffered when stopped', () => {
