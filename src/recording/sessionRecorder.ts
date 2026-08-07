@@ -16,6 +16,8 @@ const MAX_MAX_RECORDING_DURATION_MS = 2 * 60 * 60 * 1000;
 const MAX_CHUNK_EVENTS = 200;
 const MAX_CHUNK_SIZE_BYTES = 512 * 1024;
 
+const KEEPALIVE_MAX_BYTES = 64 * 1024;
+
 const MASK_TEXT_CLASS = 'bigdelta-mask';
 const BLOCK_CLASS = 'bigdelta-block';
 const ALL_TEXT_SELECTOR = '*';
@@ -209,7 +211,7 @@ export class SessionRecorder {
     };
   }
 
-  private flush(keepalive = false): Promise<void> | void {
+  private flush(keepalive = false): void {
     if (this.buffer.length === 0) {
       return;
     }
@@ -223,19 +225,15 @@ export class SessionRecorder {
     return this.upload(JSON.stringify(this.buildPayload(events)), keepalive);
   }
 
-  private async upload(body: string, keepalive: boolean): Promise<void> {
-    try {
-      await fetch(`${this.config.baseURL}/v1/ingestion/recordings`, {
-        method: 'POST',
-        keepalive,
-        headers: {
-          'x-tracking-key': this.config.trackingKey,
-          'Content-Type': 'application/json',
-        },
-        body,
-      });
-    } catch (e) {
-      console.warn('Error occurred when uploading session recording chunk', e);
-    }
+  private upload(body: string, keepalive: boolean): void {
+    void fetch(`${this.config.baseURL}/v1/ingestion/recordings`, {
+      method: 'POST',
+      keepalive: keepalive && new Blob([body]).size <= KEEPALIVE_MAX_BYTES,
+      headers: {
+        'x-tracking-key': this.config.trackingKey,
+        'Content-Type': 'application/json',
+      },
+      body,
+    }).catch((e) => console.warn('Error occurred when uploading session recording chunk', e));
   }
 }
