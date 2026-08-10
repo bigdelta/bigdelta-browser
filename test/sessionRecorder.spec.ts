@@ -306,4 +306,32 @@ describe('SessionRecorder', () => {
     expect(request.body.length).toBeGreaterThan(64 * 1024);
     expect(request.keepalive).toEqual(false);
   });
+
+  it('sends the final upload uncompressed so unload never waits on compression', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    recorder.stop();
+
+    const request = (global.fetch as jest.Mock).mock.calls[0][1];
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(request.headers['Content-Encoding']).toBeUndefined();
+    expect(typeof request.body).toEqual('string');
+  });
+
+  it('uploads uncompressed when the browser has no CompressionStream', () => {
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    emit(buildEvent(1000));
+    jest.advanceTimersByTime(15000);
+
+    const request = (global.fetch as jest.Mock).mock.calls[0][1];
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(request.headers['Content-Encoding']).toBeUndefined();
+    expect(JSON.parse(request.body).events).toHaveLength(2);
+  });
 });

@@ -226,12 +226,33 @@ export class SessionRecorder {
   }
 
   private upload(body: string, keepalive: boolean): void {
+    if (keepalive || typeof CompressionStream === 'undefined') {
+      this.send(body, keepalive && new Blob([body]).size <= KEEPALIVE_MAX_BYTES);
+
+      return;
+    }
+
+    void this.uploadCompressed(body);
+  }
+
+  private async uploadCompressed(body: string): Promise<void> {
+    try {
+      const compressed = new Blob([body]).stream().pipeThrough(new CompressionStream('gzip'));
+
+      this.send(await new Response(compressed).blob(), false, 'gzip');
+    } catch {
+      this.send(body, false);
+    }
+  }
+
+  private send(body: BodyInit, keepalive: boolean, contentEncoding?: string): void {
     void fetch(`${this.config.baseURL}/v1/ingestion/recordings`, {
       method: 'POST',
-      keepalive: keepalive && new Blob([body]).size <= KEEPALIVE_MAX_BYTES,
+      keepalive,
       headers: {
         'x-tracking-key': this.config.trackingKey,
         'Content-Type': 'application/json',
+        ...(contentEncoding ? { 'Content-Encoding': contentEncoding } : {}),
       },
       body,
     }).catch((e) => console.warn('Error occurred when uploading session recording chunk', e));
