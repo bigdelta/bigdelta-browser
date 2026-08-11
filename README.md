@@ -1,12 +1,14 @@
 # bigdelta-browser
 
-Bigdelta SDK for the browser.
+Official browser SDK for [Bigdelta](https://bigdelta.com), a web analytics platform with event tracking, session recording, and marketing attribution.
+
+This README covers installing and using the SDK. For the rest of the platform, see the [Bigdelta documentation](https://docs.bigdelta.com).
 
 ## Installation
 
 To get started with using Bigdelta Browser SDK, install the package to your project via npm, yarn or script loader.
 
-> Every Bigdelta workspace has its own tracking key (a UUID). All examples below use `<TRACKING_KEY>` as a placeholder - replace it with your workspace's real key.
+> Every [Bigdelta workspace](https://bigdelta.com) has its own tracking key (a UUID). All examples below use `<TRACKING_KEY>` as a placeholder - replace it with your workspace's real key.
 
 ### Installing via package manager
 

@@ -1,7 +1,7 @@
 {
   "name": "@bigdelta/bigdelta-browser",
   "version": "1.0.0",
-  "description": "Bigdelta SDK for the browser.",
+  "description": "Official Bigdelta browser SDK - web analytics, event tracking, session recording, and marketing attribution.",
   "main": "dist/index.cjs.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -50,9 +50,20 @@
       ]
     ]
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "bigdelta",
+    "analytics",
+    "web-analytics",
+    "product-analytics",
+    "event-tracking",
+    "session-recording",
+    "session-replay",
+    "marketing-attribution",
+    "browser",
+    "sdk"
+  ],
+  "author": "Bigdelta (https://bigdelta.com)",
+  "license": "MIT",
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@rollup/plugin-commonjs": "^25.0.7",
@@ -86,5 +97,5 @@
   "bugs": {
     "url": "https://github.com/bigdelta/bigdelta-browser/issues"
   },
-  "homepage": "https://github.com/bigdelta/bigdelta-browser#readme"
+  "homepage": "https://bigdelta.com"
 }
