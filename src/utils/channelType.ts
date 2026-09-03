@@ -19,13 +19,22 @@ export type ChannelType =
   | 'Audio'
   | 'Affiliate';
 
+export type AttributionValue = string | null | undefined;
+
+const normalize = (value: AttributionValue): string => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
 export const getChannelType = (
-  utmCampaign: string,
-  utmMedium: string,
-  utmSource: string,
-  referringDomain: string,
+  rawUtmCampaign: AttributionValue,
+  rawUtmMedium: AttributionValue,
+  rawUtmSource: AttributionValue,
+  rawReferringDomain: AttributionValue,
   anyClickIdPresent: boolean,
 ): ChannelType => {
+  const utmCampaign = normalize(rawUtmCampaign);
+  const utmMedium = normalize(rawUtmMedium);
+  const utmSource = normalize(rawUtmSource);
+  const referringDomain = normalize(rawReferringDomain);
+
   if (utmCampaign === 'cross-network') {
     return 'Cross Network';
   }
@@ -59,14 +68,12 @@ export const getChannelType = (
     typeOrNull(isReferral(utmMedium), 'Referral') ??
     typeOrNull(isAudio(utmMedium), 'Audio') ??
     typeOrNull(isAffiliate(utmMedium), 'Affiliate') ??
+    typeOrNull(!!referringDomain, 'Referral') ??
     'Unknown'
   );
 };
 
 const getDomainName = (domain: string): string => {
-  if (domain === null) {
-    return domain;
-  }
   const parts = domain.split('.');
   return parts.length > 2 ? parts.slice(-2).join('.') : domain;
 };
@@ -81,9 +88,9 @@ const isPaidTraffic = (utmMedium: string, anyClickIdPresent: boolean) => {
 
 const isDirectTraffic = (referringDomain: string, utmMedium: string, utmSource: string) => {
   return (
-    referringDomain === '$direct' &&
-    utmMedium === null &&
-    (utmSource === null || ['(direct)', 'direct'].includes(utmSource))
+    (!referringDomain || referringDomain === '$direct') &&
+    !utmMedium &&
+    (!utmSource || ['(direct)', 'direct'].includes(utmSource))
   );
 };
 

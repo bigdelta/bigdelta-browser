@@ -13,6 +13,7 @@ import {
 import { getRecordingScriptUrl, loadScript } from './utils/scriptSource';
 import { getMarketingAttributionParameters } from './utils/marketingAttribution';
 import { initialAttributionRecordProperties } from './utils/attribution';
+import { parseReferringDomain } from './utils/referringDomain';
 import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './utils/userAgentParser';
 import { PersistentStorage } from './utils/persistentStorage';
 import { Session } from './model/session';
@@ -94,7 +95,7 @@ export class Bigdelta {
       const operatingSystem = window ? await getOperatingSystem(window.navigator.userAgent) : undefined;
       const deviceType = window ? getDeviceType(window.navigator.userAgent) : undefined;
       const referrer = document ? document.referrer : undefined;
-      const referringDomain = this.parseReferringDomain(referrer);
+      const referringDomain = parseReferringDomain(referrer, document ? document.location.hostname : undefined);
 
       const eventsWithProperties = events.map((event) => ({
         ...event,
@@ -632,7 +633,7 @@ export class Bigdelta {
     }
 
     const referrer = pageContext.document ? pageContext.document.referrer : undefined;
-    const referringDomain = this.parseReferringDomain(referrer);
+    const referringDomain = parseReferringDomain(referrer, pageContext.location?.hostname);
 
     this.attribution = initialAttributionRecordProperties({
       $referring_domain: referringDomain,
@@ -640,17 +641,6 @@ export class Bigdelta {
     });
 
     this.persistentStorage.saveAttribution(this.attribution);
-  }
-
-  private parseReferringDomain(referrer: string | undefined) {
-    try {
-      if (!referrer) {
-        return undefined;
-      }
-      return new URL(referrer).hostname;
-    } catch (e) {
-      return undefined;
-    }
   }
 }
 

@@ -109,9 +109,9 @@ export class PersistentStorage {
 
   private get(name: string) {
     if (this.config.storageType === 'cookies') {
-      this.getCookie(name);
+      return this.getCookie(name);
     } else if (this.config.storageType === 'localStorage') {
-      this.getFromLocalStorage(name);
+      return this.getFromLocalStorage(name);
     } else {
       const cookieValue = this.getCookie(name);
       return cookieValue ? cookieValue : this.getFromLocalStorage(name);
