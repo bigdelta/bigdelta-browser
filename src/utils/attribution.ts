@@ -35,10 +35,10 @@ const buildAttribution = (properties: Record<string, any> | null | undefined, pr
     [`${prefix}initial_twclid`]: properties['$twclid'],
     [`${prefix}initial_wbraid`]: properties['$wbraid'],
     [`${prefix}channel_type`]: getChannelType(
-      String(properties['$utm_campaign']),
-      String(properties['$utm_medium']),
-      String(properties['$utm_source']),
-      String(properties['$referring_domain']),
+      properties['$utm_campaign'],
+      properties['$utm_medium'],
+      properties['$utm_source'],
+      properties['$referring_domain'],
       CLICK_ID_PROPERTIES.some((key) => !!properties[key]),
     ),
   };
