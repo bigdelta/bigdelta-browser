@@ -25,8 +25,6 @@ export const PAID_CLICK_ID_PARAMS = [
 
 export const AI_CLICK_ID_PARAMS = ['adview_query_id', 'oppref'];
 
-// Captured, but never a paid signal on their own: Google appends srsltid to free
-// product listings and organic results, and olref is impression-side logging.
 const PASSIVE_CLICK_ID_PARAMS = ['olref', 'srsltid'];
 
 export const CLICK_ID_PARAMS = [...PAID_CLICK_ID_PARAMS, ...PASSIVE_CLICK_ID_PARAMS];
