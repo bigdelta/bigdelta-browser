@@ -75,3 +75,47 @@ describe('Channel type', () => {
     });
   });
 });
+
+describe('AI assistant traffic', () => {
+  it('should classify a ChatGPT ad click as Paid AI Assistant', () => {
+    expect(getChannelType(undefined, undefined, undefined, undefined, true, true)).toBe('Paid AI Assistant');
+  });
+
+  it('should classify a chatgpt.com referrer as AI Assistant', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'chatgpt.com', false)).toBe('AI Assistant');
+  });
+
+  it('should classify a perplexity referrer as AI Assistant', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'www.perplexity.ai', false)).toBe('AI Assistant');
+  });
+
+  it('should classify gemini as AI Assistant rather than Organic Search', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'gemini.google.com', false)).toBe('AI Assistant');
+  });
+
+  it('should classify copilot as AI Assistant rather than a Microsoft referral', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'copilot.microsoft.com', false)).toBe('AI Assistant');
+  });
+
+  it('should still classify plain google as Organic Search', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'www.google.com', false)).toBe('Organic Search');
+  });
+
+  it('should classify the GA4 ai-assistant medium as AI Assistant', () => {
+    expect(getChannelType(undefined, 'ai-assistant', undefined, undefined, false)).toBe('AI Assistant');
+  });
+
+  it('should classify a manually tagged chatgpt source as AI Assistant', () => {
+    expect(getChannelType(undefined, undefined, 'chatgpt', undefined, false)).toBe('AI Assistant');
+  });
+
+  it('should classify a manually tagged paid chatgpt campaign as Paid AI Assistant', () => {
+    expect(getChannelType(undefined, 'cpc', 'chatgpt', undefined, false)).toBe('Paid AI Assistant');
+  });
+});
+
+describe('non-paid click identifiers', () => {
+  it('should not treat a Google Shopping free listing as paid', () => {
+    expect(getChannelType(undefined, undefined, undefined, 'www.google.com', false)).toBe('Organic Search');
+  });
+});

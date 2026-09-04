@@ -1,18 +1,39 @@
-const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+export const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
-const CLICK_ID_PARAMS = [
+export const PAID_CLICK_ID_PARAMS = [
+  'adview_query_id',
+  'cjevent',
   'dclid',
+  'epik',
   'fbclid',
+  'gad_source',
   'gbraid',
   'gclid',
+  'irclickid',
   'ko_click_id',
   'li_fat_id',
   'msclkid',
+  'oppref',
+  'qclid',
+  'rdt_cid',
   'rtd_cid',
+  'ScCid',
   'ttclid',
   'twclid',
   'wbraid',
 ];
+
+export const AI_CLICK_ID_PARAMS = ['adview_query_id', 'oppref'];
+
+// Captured, but never a paid signal on their own: Google appends srsltid to free
+// product listings and organic results, and olref is impression-side logging.
+const PASSIVE_CLICK_ID_PARAMS = ['olref', 'srsltid'];
+
+export const CLICK_ID_PARAMS = [...PAID_CLICK_ID_PARAMS, ...PASSIVE_CLICK_ID_PARAMS];
+
+export const ATTRIBUTION_PARAMS = [...UTM_PARAMS, 'referring_domain', ...CLICK_ID_PARAMS];
+
+export const toAttributionPropertyName = (param: string): string => param.toLowerCase();
 
 export const getMarketingAttributionParameters = (url: string): Record<string, string> => {
   return {
@@ -26,6 +47,6 @@ const getPropertiesFromQueryParams = (url: string, params: string[]): Record<str
   return Object.fromEntries(
     Array.from(new URLSearchParams(queryString).entries())
       .filter(([key]) => params.includes(key))
-      .map(([key, value]) => [`$${key}`, value]),
+      .map(([key, value]) => [`$${toAttributionPropertyName(key)}`, value]),
   );
 };
