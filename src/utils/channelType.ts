@@ -12,6 +12,8 @@ export type ChannelType =
   | 'Organic Video'
   | 'Organic Shopping'
   | 'Unknown'
+  | 'AI Assistant'
+  | 'Paid AI Assistant'
   | 'Email'
   | 'SMS'
   | 'Push'
@@ -29,6 +31,7 @@ export const getChannelType = (
   rawUtmSource: AttributionValue,
   rawReferringDomain: AttributionValue,
   anyClickIdPresent: boolean,
+  aiClickIdPresent = false,
 ): ChannelType => {
   const utmCampaign = normalize(rawUtmCampaign);
   const utmMedium = normalize(rawUtmMedium);
@@ -41,8 +44,11 @@ export const getChannelType = (
 
   const domainName = getDomainName(referringDomain);
 
+  const isAiAssistant = isAi(utmSource, utmMedium, referringDomain, aiClickIdPresent);
+
   if (isPaidTraffic(utmMedium, anyClickIdPresent)) {
     return (
+      typeOrNull(isAiAssistant, 'Paid AI Assistant') ??
       typeOrNull(isSearch(utmSource, domainName), 'Paid Search') ??
       typeOrNull(isSocial(utmSource, domainName, utmMedium), 'Paid Social') ??
       typeOrNull(isVideo(utmSource, domainName, utmMedium, utmCampaign), 'Paid Video') ??
@@ -57,6 +63,7 @@ export const getChannelType = (
   }
 
   return (
+    typeOrNull(isAiAssistant, 'AI Assistant') ??
     typeOrNull(isSearch(utmSource, domainName), 'Organic Search') ??
     typeOrNull(isSocial(utmSource, domainName, utmMedium), 'Organic Social') ??
     typeOrNull(isVideo(utmSource, domainName, utmMedium, utmCampaign), 'Organic Video') ??
@@ -91,6 +98,15 @@ const isDirectTraffic = (referringDomain: string, utmMedium: string, utmSource: 
     (!referringDomain || referringDomain === '$direct') &&
     !utmMedium &&
     (!utmSource || ['(direct)', 'direct'].includes(utmSource))
+  );
+};
+
+const isAi = (utmSource: string, utmMedium: string, referringDomain: string, aiClickIdPresent: boolean) => {
+  return (
+    aiClickIdPresent ||
+    aiUtmSources.includes(utmSource) ||
+    aiUtmMediums.includes(utmMedium) ||
+    aiReferringDomains.some((domain) => referringDomain === domain || referringDomain.endsWith(`.${domain}`))
   );
 };
 
@@ -156,6 +172,36 @@ const isAffiliate = (utmMedium: string) => {
 const typeOrNull = (condition: boolean, channelType: ChannelType): ChannelType | null => {
   return condition ? channelType : null;
 };
+
+const aiUtmSources = [
+  'chatgpt',
+  'claude',
+  'copilot',
+  'deepseek',
+  'gemini',
+  'grok',
+  'meta-ai',
+  'mistral',
+  'openai',
+  'perplexity',
+];
+
+const aiUtmMediums = ['ai', 'ai-assistant'];
+
+const aiReferringDomains = [
+  'chatgpt.com',
+  'claude.ai',
+  'copilot.microsoft.com',
+  'deepseek.com',
+  'gemini.google.com',
+  'grok.com',
+  'iask.ai',
+  'meta.ai',
+  'openai.com',
+  'perplexity.ai',
+  'x.ai',
+  'chat.mistral.ai',
+];
 
 const searchUtmSources = [
   'alice',

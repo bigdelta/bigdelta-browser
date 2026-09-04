@@ -1,45 +1,34 @@
 import { getChannelType } from './channelType';
+import {
+  AI_CLICK_ID_PARAMS,
+  ATTRIBUTION_PARAMS,
+  PAID_CLICK_ID_PARAMS,
+  toAttributionPropertyName,
+} from './marketingAttribution';
 
-const CLICK_ID_PROPERTIES = [
-  '$dclid',
-  '$fbclid',
-  '$gbraid',
-  '$gclid',
-  '$ko_click_id',
-  '$li_fat_id',
-  '$msclkid',
-  '$rtd_cid',
-  '$ttclid',
-  '$twclid',
-  '$wbraid',
-];
+const hasAnyParam = (properties: Record<string, any>, params: string[]): boolean =>
+  params.some((param) => !!properties[`$${toAttributionPropertyName(param)}`]);
 
 const buildAttribution = (properties: Record<string, any> | null | undefined, prefix: string): Record<string, any> => {
   properties = properties || {};
+
+  const initialProperties = Object.fromEntries(
+    ATTRIBUTION_PARAMS.map((param) => {
+      const name = toAttributionPropertyName(param);
+
+      return [`${prefix}initial_${name}`, properties[`$${name}`]];
+    }),
+  );
+
   return {
-    [`${prefix}initial_utm_source`]: properties['$utm_source'],
-    [`${prefix}initial_utm_medium`]: properties['$utm_medium'],
-    [`${prefix}initial_utm_campaign`]: properties['$utm_campaign'],
-    [`${prefix}initial_utm_term`]: properties['$utm_term'],
-    [`${prefix}initial_utm_content`]: properties['$utm_content'],
-    [`${prefix}initial_referring_domain`]: properties['$referring_domain'],
-    [`${prefix}initial_dclid`]: properties['$dclid'],
-    [`${prefix}initial_fbclid`]: properties['$fbclid'],
-    [`${prefix}initial_gbraid`]: properties['$gbraid'],
-    [`${prefix}initial_gclid`]: properties['$gclid'],
-    [`${prefix}initial_ko_click_id`]: properties['$ko_click_id'],
-    [`${prefix}initial_li_fat_id`]: properties['$li_fat_id'],
-    [`${prefix}initial_msclkid`]: properties['$msclkid'],
-    [`${prefix}initial_rtd_cid`]: properties['$rtd_cid'],
-    [`${prefix}initial_ttclid`]: properties['$ttclid'],
-    [`${prefix}initial_twclid`]: properties['$twclid'],
-    [`${prefix}initial_wbraid`]: properties['$wbraid'],
+    ...initialProperties,
     [`${prefix}channel_type`]: getChannelType(
       properties['$utm_campaign'],
       properties['$utm_medium'],
       properties['$utm_source'],
       properties['$referring_domain'],
-      CLICK_ID_PROPERTIES.some((key) => !!properties[key]),
+      hasAnyParam(properties, PAID_CLICK_ID_PARAMS),
+      hasAnyParam(properties, AI_CLICK_ID_PARAMS),
     ),
   };
 };
