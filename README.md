@@ -178,6 +178,19 @@ import '@bigdelta/bigdelta-browser/recording';
 
 All form inputs are masked by default. Password, email and telephone inputs are always masked and this cannot be disabled.
 
+To record what visitors type into a particular field, name it with `unmaskSelector`:
+
+```html
+const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
+    unmaskSelector: '[data-bigdelta-unmask]' }}});
+```
+
+```html
+<input type="text" name="website" data-bigdelta-unmask />
+```
+
+Only elements matching the selector are revealed, and everything else stays masked. Password, email and telephone inputs stay masked even when the selector matches them, so a broad selector cannot expose them.
+
 Page text is recorded as-is. To hide it, add the `bigdelta-mask` class to an element, which replaces the text of that element and its children:
 
 ```html
@@ -197,12 +210,14 @@ const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConf
     maskTextSelector: '[data-private]', blockSelector: '#intercom-container' }}});
 ```
 
-To mask everything and reveal only what you choose, use `maskAllText` together with `unmaskTextSelector`:
+To mask everything and reveal only what you choose, use `maskAllText` together with `unmaskSelector`:
 
 ```html
 const client = new Bigdelta({ trackingKey: '<TRACKING_KEY>', defaultTrackingConfig: { sessionRecording: { enabled: true,
-    maskAllText: true, unmaskTextSelector: '.site-navigation' }}});
+    maskAllText: true, unmaskSelector: '.site-navigation' }}});
 ```
+
+`unmaskSelector` reveals both page text and input values for the elements it matches.
 
 #### Tune recording uploads
 

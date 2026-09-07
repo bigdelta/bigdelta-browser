@@ -14,7 +14,7 @@ export interface SessionRecordingConfig {
   enabled: boolean;
   maskAllText?: boolean;
   maskTextSelector?: string;
-  unmaskTextSelector?: string;
+  unmaskSelector?: string;
   blockSelector?: string;
   flushIntervalMs?: number;
   maxRecordingDurationMs?: number;

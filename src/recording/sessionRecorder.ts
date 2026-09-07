@@ -30,6 +30,12 @@ const ALWAYS_MASKED_INPUTS = {
   tel: true,
 } as const;
 
+export const isUnmaskableInput = (element: HTMLElement): boolean => {
+  const type = ((element as HTMLInputElement).type ?? element.getAttribute('type') ?? '').toLowerCase();
+
+  return !(type in ALWAYS_MASKED_INPUTS);
+};
+
 export class SessionRecorder {
   private readonly pageLoadId = uuid();
   private readonly windowId = getWindowId();
@@ -86,7 +92,10 @@ export class SessionRecorder {
         maskInputOptions: ALWAYS_MASKED_INPUTS,
         maskTextClass: MASK_TEXT_CLASS,
         maskTextSelector: this.buildMaskTextSelector(),
-        maskTextFn: this.config.unmaskTextSelector ? (text, element) => this.maskText(text, element) : undefined,
+        maskTextFn: this.config.unmaskSelector ? (text, element) => this.maskText(text, element) : undefined,
+        maskInputFn: this.config.unmaskSelector
+          ? (text, element) => this.maskInput(text, element, this.config.unmaskSelector!)
+          : undefined,
         blockClass: BLOCK_CLASS,
         blockSelector: this.config.blockSelector,
         recordCanvas: false,
@@ -145,11 +154,19 @@ export class SessionRecorder {
   }
 
   private maskText(text: string, element: HTMLElement | null): string {
-    if (element && this.config.unmaskTextSelector && element.closest(this.config.unmaskTextSelector)) {
+    if (element && this.config.unmaskSelector && element.closest(this.config.unmaskSelector)) {
       return text;
     }
 
     return text.replace(/[\S]/g, '*');
+  }
+
+  private maskInput(text: string, element: HTMLElement, unmaskSelector: string): string {
+    if (isUnmaskableInput(element) && element.closest(unmaskSelector)) {
+      return text;
+    }
+
+    return '*'.repeat(text.length);
   }
 
   private buildMaskTextSelector(): string | undefined {
