@@ -645,8 +645,8 @@ describe('Bigdelta', () => {
                   },
                   set: {
                     $session_start: '2024-01-01T00:00:00.000Z',
-                    $session_end: '2024-01-01T00:30:00.000Z',
-                    $session_duration_seconds: 1800,
+                    $session_end: '2024-01-01T00:00:00.000Z',
+                    $session_duration_seconds: 0,
                     $event_count: 1,
                     $pageview_count: 1,
                     $is_bounce: true,
@@ -773,8 +773,8 @@ describe('Bigdelta', () => {
                   set_once: {},
                   set: {
                     $session_start: '2024-01-01T00:00:00.000Z',
-                    $session_end: '2024-01-01T00:31:00.000Z',
-                    $session_duration_seconds: 1860,
+                    $session_end: '2024-01-01T00:01:00.000Z',
+                    $session_duration_seconds: 60,
                     $event_count: 2,
                     $pageview_count: 1,
                     $is_bounce: false,
