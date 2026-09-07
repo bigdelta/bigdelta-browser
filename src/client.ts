@@ -18,15 +18,17 @@ import { getBrowserWithVersion, getDeviceType, getOperatingSystem } from './util
 import { PersistentStorage } from './utils/persistentStorage';
 import { Session } from './model/session';
 import { DateTime } from 'luxon';
-import { initialSessionProperties, sessionProperties } from './utils/sessionMapper';
+import { initialSessionProperties, sessionProperties, sessionTimingProperties } from './utils/sessionMapper';
 import { SetRecordProperties } from './model/record';
 
 const PAGE_VIEW_EVENT_NAME = 'Page View';
-const PRESENCE_INTERVAL_MS = 30000;
-const PRESENCE_ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click'] as const;
+const ACTIVITY_INTERVAL_MS = 30000;
+const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click'] as const;
 const USERS_OBJECT_SLUG = 'users';
+const SESSIONS_OBJECT_SLUG = 'sessions';
 const ANONYMOUS_IDENTIFICATION_KEY = 'anonymous';
 const ANONYMOUS_RECORD_PROPERTY = 'is_anonymous';
+const SESSION_TIMEOUT_MINUTES = 30;
 
 interface PageContext {
   location: Location;
@@ -50,12 +52,24 @@ export class Bigdelta {
   private sessionRecorder: { start: () => void; stop: () => void } | null = null;
   private sessionRecordingConfig: SessionRecordingConfig | null = null;
 
-  private presenceIntervalId: number | null = null;
+  private activityIntervalId: number | null = null;
   private initialPresenceSent = false;
   private lastActivityAt: DateTime = DateTime.now();
 
+  private lastFlushedActivityAt: string | null = null;
+
   private readonly handleActivity = () => {
     this.lastActivityAt = DateTime.now();
+  };
+
+  private readonly handlePageHide = () => {
+    void this.flushSessionActivity();
+  };
+
+  private readonly handleVisibilityChange = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      void this.flushSessionActivity();
+    }
   };
 
   constructor(config: Config) {
@@ -126,7 +140,7 @@ export class Bigdelta {
           ...(sessionInfo.shouldTrack && this.isInSessionScope(event, this.config.defaultTrackingConfig.sessions)
             ? [
                 {
-                  object_slug: 'sessions',
+                  object_slug: SESSIONS_OBJECT_SLUG,
                   record_id: this.session.id,
                   set_once: { ...initialSessionProperties },
                   set: { ...sessionProperties },
@@ -258,7 +272,7 @@ export class Bigdelta {
       return false;
     }
 
-    if (DateTime.now().diff(this.lastActivityAt).toMillis() > PRESENCE_INTERVAL_MS) {
+    if (!this.isRecentlyActive()) {
       return false;
     }
 
@@ -288,22 +302,23 @@ export class Bigdelta {
   }
 
   private startPresenceTracking() {
-    if (typeof window === 'undefined' || this.presenceIntervalId !== null || !this.clientState.trackingEnabled) {
+    if (typeof window === 'undefined' || this.activityIntervalId !== null || !this.clientState.trackingEnabled) {
       return;
     }
 
     this.lastActivityAt = DateTime.now();
     this.registerActivityListeners();
 
-    this.presenceIntervalId = window.setInterval(async () => {
+    this.activityIntervalId = window.setInterval(async () => {
+      this.extendSessionOnActivity();
       await this.updatePresence();
-    }, PRESENCE_INTERVAL_MS);
+    }, ACTIVITY_INTERVAL_MS);
   }
 
   private stopPresenceTracking() {
-    if (this.presenceIntervalId !== null) {
-      clearInterval(this.presenceIntervalId);
-      this.presenceIntervalId = null;
+    if (this.activityIntervalId !== null) {
+      clearInterval(this.activityIntervalId);
+      this.activityIntervalId = null;
     }
     this.removeActivityListeners();
   }
@@ -313,9 +328,12 @@ export class Bigdelta {
       return;
     }
 
-    PRESENCE_ACTIVITY_EVENTS.forEach((event) => {
+    ACTIVITY_EVENTS.forEach((event) => {
       window.addEventListener(event, this.handleActivity, { passive: true });
     });
+
+    window.addEventListener('pagehide', this.handlePageHide);
+    window.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   private removeActivityListeners() {
@@ -323,15 +341,28 @@ export class Bigdelta {
       return;
     }
 
-    PRESENCE_ACTIVITY_EVENTS.forEach((event) => {
+    ACTIVITY_EVENTS.forEach((event) => {
       window.removeEventListener(event, this.handleActivity);
     });
+
+    window.removeEventListener('pagehide', this.handlePageHide);
+    window.removeEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
+  private isRecentlyActive() {
+    return DateTime.now().diff(this.lastActivityAt).toMillis() <= ACTIVITY_INTERVAL_MS;
+  }
+
+  private isSessionTrackingEnabled() {
+    const sessionsConfig = this.config.defaultTrackingConfig.sessions;
+
+    return !sessionsConfig || sessionsConfig.enabled;
   }
 
   private tryUpdateSessionState(events: EventPayload[]): SessionInfo {
     const sessionsConfig = this.config.defaultTrackingConfig.sessions;
 
-    if (!sessionsConfig || sessionsConfig.enabled) {
+    if (this.isSessionTrackingEnabled()) {
       const eligibleEvents = events.filter((e) => this.isInSessionScope(e, sessionsConfig));
 
       if (eligibleEvents.length === 0) {
@@ -343,12 +374,15 @@ export class Bigdelta {
 
       const now = DateTime.now().toUTC();
 
-      if (this.session && now.toISO() < this.session.session_end) {
+      const storedSession = this.persistentStorage.loadSession() ?? this.session;
+
+      if (storedSession && now.toISO() < storedSession.expires_at) {
         this.session = {
-          ...this.session,
-          session_end: now.plus({ minute: 30 }).toISO(),
-          event_count: this.session.event_count + currentBatchEventCount,
-          pageview_count: this.session.pageview_count + currentBatchPageViewCount,
+          ...storedSession,
+          last_activity_at: now.toISO(),
+          expires_at: now.plus({ minute: SESSION_TIMEOUT_MINUTES }).toISO(),
+          event_count: storedSession.event_count + currentBatchEventCount,
+          pageview_count: storedSession.pageview_count + currentBatchPageViewCount,
         };
         this.persistentStorage.saveSession(this.session);
         return { shouldTrack: true, isNew: false };
@@ -356,7 +390,8 @@ export class Bigdelta {
         this.session = {
           id: uuid(),
           session_start: now.toISO(),
-          session_end: now.plus({ minute: 30 }).toISO(),
+          last_activity_at: now.toISO(),
+          expires_at: now.plus({ minute: SESSION_TIMEOUT_MINUTES }).toISO(),
           event_count: currentBatchEventCount,
           pageview_count: currentBatchPageViewCount,
         };
@@ -370,6 +405,78 @@ export class Bigdelta {
 
   private isInSessionScope(event: EventPayload, sessionsConfig?: SessionsConfig) {
     return !event.created_at && !(sessionsConfig?.excludeEvents || []).includes(event.event_name);
+  }
+
+  private extendSessionOnActivity() {
+    if (!this.session || !this.isSessionTrackingEnabled()) {
+      return;
+    }
+
+    const now = DateTime.now().toUTC();
+
+    if (now.toISO() >= this.session.expires_at || !this.isRecentlyActive()) {
+      return;
+    }
+
+    const lastActivityAt = this.lastActivityAt.toUTC();
+
+    this.session = {
+      ...this.session,
+      last_activity_at: lastActivityAt.toISO(),
+      expires_at: lastActivityAt.plus({ minute: SESSION_TIMEOUT_MINUTES }).toISO(),
+    };
+    this.persistentStorage.saveSession(this.session);
+  }
+
+  private async flushSessionActivity(): Promise<void> {
+    if (!this.session || !this.clientState.trackingEnabled || !this.isSessionTrackingEnabled()) {
+      return;
+    }
+
+    const ownActivityAt = this.lastActivityAt.toUTC().toISO();
+    const storedSession = this.persistentStorage.loadSession();
+    const latestActivityAt =
+      storedSession && storedSession.id === this.session.id && storedSession.last_activity_at > ownActivityAt
+        ? storedSession.last_activity_at
+        : ownActivityAt;
+
+    const session = { ...this.session, last_activity_at: latestActivityAt };
+
+    if (session.last_activity_at <= session.session_start) {
+      return;
+    }
+
+    if (this.lastFlushedActivityAt !== null && session.last_activity_at <= this.lastFlushedActivityAt) {
+      return;
+    }
+
+    this.lastFlushedActivityAt = session.last_activity_at;
+
+    try {
+      this.assertConfig();
+
+      await fetch(`${this.config.baseURL}/v1/ingestion/records`, {
+        ...this.config.requestConfig,
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          ...this.config.requestConfig?.headers,
+          'x-tracking-key': this.config.trackingKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          records: [
+            {
+              id: session.id,
+              slug: SESSIONS_OBJECT_SLUG,
+              properties: { set: sessionTimingProperties(session) },
+            },
+          ],
+        }),
+      });
+    } catch (e) {
+      console.warn('Error occurred when flushing session activity', e);
+    }
   }
 
   private getSessionProperties(sessionInfo: SessionInfo, events: EventPayload[]) {
