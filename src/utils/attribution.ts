@@ -37,7 +37,17 @@ const buildAttribution = (properties: Record<string, any> | null | undefined, pr
 export const initialAttributionProperties = (properties: Record<string, any> | null | undefined): Record<string, any> =>
   buildAttribution(properties, '$');
 
+const toAdCampaignProperty = (campaignId: string | undefined): Record<string, any> | string | undefined =>
+  campaignId ? { $type: 'ad_campaign', id: campaignId } : campaignId;
+
 // Plain-named attribution, used as set_once on identified user/account records.
 export const initialAttributionRecordProperties = (
   properties: Record<string, any> | null | undefined,
-): Record<string, any> => buildAttribution(properties, '');
+): Record<string, any> => {
+  const attribution = buildAttribution(properties, '');
+
+  return {
+    ...attribution,
+    initial_utm_campaign: toAdCampaignProperty(attribution['initial_utm_campaign']),
+  };
+};

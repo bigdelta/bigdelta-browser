@@ -400,7 +400,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -454,7 +454,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -625,7 +625,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -686,7 +686,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -724,7 +724,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -761,7 +761,7 @@ describe('Bigdelta', () => {
                   object_slug: 'users',
                   record_id: 'user',
                   set_once: {
-                    initial_utm_campaign: 'campaign',
+                    initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
                     initial_referring_domain: 'www.google.com',
                     initial_gclid: 'id',
                     channel_type: 'Paid Search',
@@ -853,7 +853,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Order Completed' });
 
       const attribution = {
-        initial_utm_campaign: 'campaign',
+        initial_utm_campaign: { $type: 'ad_campaign', id: 'campaign' },
         initial_referring_domain: 'www.google.com',
         initial_gclid: 'id',
         channel_type: 'Paid Search',
