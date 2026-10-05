@@ -23,7 +23,7 @@ import { SetRecordProperties } from './model/record';
 
 const PAGE_VIEW_EVENT_NAME = 'Page View';
 const ACTIVITY_INTERVAL_MS = 30000;
-const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click'] as const;
+const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'] as const;
 const USERS_OBJECT_SLUG = 'users';
 const SESSIONS_OBJECT_SLUG = 'sessions';
 const ANONYMOUS_IDENTIFICATION_KEY = 'anonymous';
@@ -329,7 +329,7 @@ export class Bigdelta {
     }
 
     ACTIVITY_EVENTS.forEach((event) => {
-      window.addEventListener(event, this.handleActivity, { passive: true });
+      window.addEventListener(event, this.handleActivity, { passive: true, capture: true });
     });
 
     window.addEventListener('pagehide', this.handlePageHide);
@@ -342,7 +342,7 @@ export class Bigdelta {
     }
 
     ACTIVITY_EVENTS.forEach((event) => {
-      window.removeEventListener(event, this.handleActivity);
+      window.removeEventListener(event, this.handleActivity, { capture: true });
     });
 
     window.removeEventListener('pagehide', this.handlePageHide);
