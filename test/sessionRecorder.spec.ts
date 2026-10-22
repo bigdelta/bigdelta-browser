@@ -283,6 +283,34 @@ describe('SessionRecorder', () => {
     expect(addCustomEventMock).not.toHaveBeenCalled();
   });
 
+  it('retries the page context once rrweb starts recording after the page loads', () => {
+    let isRecording = false;
+    addCustomEventMock.mockImplementation((tag: string, payload: unknown) => {
+      if (!isRecording) {
+        throw new Error('please add custom event after start recording');
+      }
+
+      emit({ type: 5, data: { tag, payload }, timestamp: Date.now() } as unknown as eventWithTime);
+    });
+
+    const recorder = buildRecorder({ flushIntervalMs: 15000 });
+    recorder.start();
+
+    expect(() => emit({ type: 0, data: {}, timestamp: 1000 } as unknown as eventWithTime)).not.toThrow();
+    expect(() => emit({ type: 1, data: {}, timestamp: 2000 } as unknown as eventWithTime)).not.toThrow();
+
+    isRecording = true;
+    emit(buildEvent(3000));
+    jest.advanceTimersByTime(15000);
+
+    const events: RecordedEvent[] = lastRequestBody().events;
+    const contexts = pageContextEvents(events);
+
+    expect(events.map((event) => event.type)).toEqual([0, 1, 5, 3]);
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0].data?.payload?.url).toEqual('http://subdomain.mytestdomain.com/');
+  });
+
   it('flushes what is buffered when stopped', () => {
     const recorder = buildRecorder({ flushIntervalMs: 15000 });
     recorder.start();

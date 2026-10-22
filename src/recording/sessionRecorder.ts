@@ -210,6 +210,8 @@ export class SessionRecorder {
         url: window.location.href,
         documentHeight: SessionRecorder.getDocumentHeight(),
       });
+    } catch {
+      this.needsPageContext = true;
     } finally {
       this.isEmittingPageContext = false;
     }
