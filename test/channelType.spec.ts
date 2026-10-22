@@ -48,6 +48,34 @@ describe('Channel type', () => {
       expect(getChannelType(undefined, ' cpc ', ' google ', undefined, false)).toBe('Paid Search');
     });
 
+    it('should match a referrer on a country second-level domain', () => {
+      expect(getChannelType(undefined, undefined, undefined, 'www.google.co.uk', false)).toBe('Organic Search');
+      expect(getChannelType(undefined, undefined, undefined, 'www.google.com.au', false)).toBe('Organic Search');
+      expect(getChannelType(undefined, undefined, undefined, 'search.yahoo.co.jp', false)).toBe('Organic Search');
+      expect(getChannelType(undefined, undefined, undefined, 'www.amazon.co.uk', false)).toBe('Organic Shopping');
+    });
+
+    it('should match a referrer on a subdomain of a listed domain', () => {
+      expect(getChannelType(undefined, undefined, undefined, 'l.facebook.com', false)).toBe('Organic Social');
+      expect(getChannelType(undefined, undefined, undefined, 'm.youtube.com', false)).toBe('Organic Video');
+    });
+
+    it('should not match an unlisted domain that only shares a country suffix', () => {
+      expect(getChannelType(undefined, undefined, undefined, 'www.bbc.co.uk', false)).toBe('Referral');
+    });
+
+    it('should classify the Meta site source values as social', () => {
+      expect(getChannelType(undefined, 'paid_social', 'an', undefined, false)).toBe('Paid Social');
+      expect(getChannelType(undefined, 'paid_social', 'msg', undefined, false)).toBe('Paid Social');
+      expect(getChannelType(undefined, 'paid_social', 'fb', undefined, false)).toBe('Paid Social');
+      expect(getChannelType(undefined, 'paid_social', 'ig', undefined, false)).toBe('Paid Social');
+    });
+
+    it('should match utm sources that are listed with capital letters', () => {
+      expect(getChannelType(undefined, undefined, 'IGShopping', undefined, false)).toBe('Organic Shopping');
+      expect(getChannelType(undefined, undefined, 'Hatena', undefined, false)).toBe('Organic Social');
+    });
+
     it('should not throw on non-string input', () => {
       expect(() => getChannelType(1 as any, {} as any, [] as any, true as any, false)).not.toThrow();
     });
