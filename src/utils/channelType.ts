@@ -42,17 +42,17 @@ export const getChannelType = (
     return 'Cross Network';
   }
 
-  const domainName = getDomainName(referringDomain);
+  const domainNames = getDomainNames(referringDomain);
 
   const isAiAssistant = isAi(utmSource, utmMedium, referringDomain, aiClickIdPresent);
 
   if (isPaidTraffic(utmMedium, anyClickIdPresent)) {
     return (
       typeOrNull(isAiAssistant, 'Paid AI Assistant') ??
-      typeOrNull(isSearch(utmSource, domainName), 'Paid Search') ??
-      typeOrNull(isSocial(utmSource, domainName, utmMedium), 'Paid Social') ??
-      typeOrNull(isVideo(utmSource, domainName, utmMedium, utmCampaign), 'Paid Video') ??
-      typeOrNull(isShopping(utmSource, domainName, utmCampaign), 'Paid Shopping') ??
+      typeOrNull(isSearch(utmSource, domainNames), 'Paid Search') ??
+      typeOrNull(isSocial(utmSource, domainNames, utmMedium), 'Paid Social') ??
+      typeOrNull(isVideo(utmSource, domainNames, utmMedium, utmCampaign), 'Paid Video') ??
+      typeOrNull(isShopping(utmSource, domainNames, utmCampaign), 'Paid Shopping') ??
       typeOrNull(isDisplay(utmMedium), 'Display') ??
       'Paid Unknown'
     );
@@ -64,10 +64,10 @@ export const getChannelType = (
 
   return (
     typeOrNull(isAiAssistant, 'AI Assistant') ??
-    typeOrNull(isSearch(utmSource, domainName), 'Organic Search') ??
-    typeOrNull(isSocial(utmSource, domainName, utmMedium), 'Organic Social') ??
-    typeOrNull(isVideo(utmSource, domainName, utmMedium, utmCampaign), 'Organic Video') ??
-    typeOrNull(isShopping(utmSource, domainName, utmCampaign), 'Organic Shopping') ??
+    typeOrNull(isSearch(utmSource, domainNames), 'Organic Search') ??
+    typeOrNull(isSocial(utmSource, domainNames, utmMedium), 'Organic Social') ??
+    typeOrNull(isVideo(utmSource, domainNames, utmMedium, utmCampaign), 'Organic Video') ??
+    typeOrNull(isShopping(utmSource, domainNames, utmCampaign), 'Organic Shopping') ??
     typeOrNull(isEmail(utmSource, utmMedium), 'Email') ??
     typeOrNull(isSMS(utmSource), 'SMS') ??
     typeOrNull(isPush(utmSource, utmMedium), 'Push') ??
@@ -80,9 +80,13 @@ export const getChannelType = (
   );
 };
 
-const getDomainName = (domain: string): string => {
+const getDomainNames = (domain: string): string[] => {
   const parts = domain.split('.');
-  return parts.length > 2 ? parts.slice(-2).join('.') : domain;
+  return parts.map((_, index) => parts.slice(index).join('.'));
+};
+
+const matchesDomain = (domainNames: string[], referringDomains: string[]) => {
+  return domainNames.some((domainName) => referringDomains.includes(domainName));
 };
 
 const isPaidTraffic = (utmMedium: string, anyClickIdPresent: boolean) => {
@@ -110,31 +114,31 @@ const isAi = (utmSource: string, utmMedium: string, referringDomain: string, aiC
   );
 };
 
-const isSearch = (utmSource: string, domainName: string) => {
-  return searchUtmSources.includes(utmSource) || searchReferringDomain.includes(domainName);
+const isSearch = (utmSource: string, domainNames: string[]) => {
+  return searchUtmSources.includes(utmSource) || matchesDomain(domainNames, searchReferringDomain);
 };
 
-const isSocial = (utmSource: string, domainName: string, utmMedium: string) => {
+const isSocial = (utmSource: string, domainNames: string[], utmMedium: string) => {
   return (
     socialUtmSources.includes(utmSource) ||
-    socialReferringDomain.includes(domainName) ||
+    matchesDomain(domainNames, socialReferringDomain) ||
     socialUtmMediums.includes(utmMedium)
   );
 };
 
-const isVideo = (utmSource: string, domainName: string, utmMedium: string, utmCampaign: string) => {
+const isVideo = (utmSource: string, domainNames: string[], utmMedium: string, utmCampaign: string) => {
   return (
     videoUtmSources.includes(utmSource) ||
-    videoReferringDomain.includes(domainName) ||
+    matchesDomain(domainNames, videoReferringDomain) ||
     utmMedium === 'video' ||
     (utmCampaign && utmCampaign.match(/^(.*video.*)$/) !== null)
   );
 };
 
-const isShopping = (utmSource: string, domainName: string, utmCampaign: string) => {
+const isShopping = (utmSource: string, domainNames: string[], utmCampaign: string) => {
   return (
     shoppingUtmSources.includes(utmSource) ||
-    shoppingReferringDomain.includes(domainName) ||
+    matchesDomain(domainNames, shoppingReferringDomain) ||
     (utmCampaign && utmCampaign.match(/^(.*(([^a-df-z]|^)shop|shopping).*)$/) !== null)
   );
 };
@@ -532,14 +536,14 @@ const searchReferringDomain = [
 
 const shoppingUtmSources = [
   'domain',
-  'IGShopping',
   'alibaba',
   'amazon',
   'ebay',
   'etsy',
+  'igshopping',
   'mercadolibre',
   'shopify',
-  'Shopping',
+  'shopping',
   'shopzilla',
   'stripe',
   'walmart',
@@ -591,13 +595,12 @@ const shoppingReferringDomain = [
 
 const socialUtmSources = [
   '43things',
-  'Hatena',
-  'ImageShack',
   'activerain',
   'activeworlds',
   'addthis',
   'alumniclass',
   'americantowns',
+  'an',
   'anobii',
   'answerbag',
   'aolanswers',
@@ -677,6 +680,7 @@ const socialUtmSources = [
   'govloop',
   'gowalla',
   'habbo',
+  'hatena',
   'hi5',
   'hootsuite',
   'houzz',
@@ -684,6 +688,7 @@ const socialUtmSources = [
   'hubculture',
   'ibibo',
   'ig',
+  'imageshack',
   'imvu',
   'insanejournal',
   'instagram',
@@ -705,6 +710,7 @@ const socialUtmSources = [
   'mocospace',
   'mouthshut',
   'movabletype',
+  'msg',
   'mubi',
   'myheritage',
   'mylife',
