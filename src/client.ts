@@ -226,7 +226,10 @@ export class Bigdelta {
       return;
     }
 
-    await this.setRecordPropertiesCallout(Array.isArray(records) ? records : [records], config);
+    await this.setRecordPropertiesCallout(
+      (Array.isArray(records) ? records : [records]).map((record) => this.withAnonymousUserProperties(record)),
+      config,
+    );
   }
 
   public async reset() {
@@ -571,13 +574,35 @@ export class Bigdelta {
     }
   }
 
+  private withAnonymousUserProperties(record: SetRecordProperties): SetRecordProperties {
+    const anonymousId = this.getIdentifier(ANONYMOUS_IDENTIFICATION_KEY);
+    const isAnonymousUserRecord =
+      record?.slug === USERS_OBJECT_SLUG && !!anonymousId && record.id === anonymousId && this.isAnonymous();
+
+    if (!isAnonymousUserRecord) {
+      return record;
+    }
+
+    return {
+      ...record,
+      properties: {
+        ...record.properties,
+        set_once: { [ANONYMOUS_RECORD_PROPERTY]: true, ...(record.properties?.set_once ?? {}) },
+      },
+    };
+  }
+
+  private isAnonymous() {
+    return !this.getIdentifier(USERS_OBJECT_SLUG);
+  }
+
   private getIdentificationRelations(): Relation[] {
     if (!this.identification) {
       this.identification = {};
       this.persistentStorage.saveIdentification(this.identification);
     }
 
-    const isAnonymous = !this.identification[USERS_OBJECT_SLUG];
+    const isAnonymous = this.isAnonymous();
 
     if (isAnonymous && !this.identification[ANONYMOUS_IDENTIFICATION_KEY]) {
       this.identification[ANONYMOUS_IDENTIFICATION_KEY] = uuid();
