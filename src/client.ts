@@ -20,6 +20,7 @@ import { Session } from './model/session';
 import { DateTime } from 'luxon';
 import { initialSessionProperties, sessionProperties, sessionTimingProperties } from './utils/sessionMapper';
 import { SetRecordProperties } from './model/record';
+import { fitsKeepalive } from './utils/keepalive';
 
 const PAGE_VIEW_EVENT_NAME = 'Page View';
 const ACTIVITY_INTERVAL_MS = 30000;
@@ -57,6 +58,8 @@ export class Bigdelta {
   private lastActivityAt: DateTime = DateTime.now();
 
   private lastFlushedActivityAt: string | null = null;
+
+  private unsentInitialSessionProperties: { sessionId: string; properties: Record<string, any> } | null = null;
 
   private readonly handleActivity = () => {
     this.lastActivityAt = DateTime.now();
@@ -156,7 +159,14 @@ export class Bigdelta {
           : {}),
       }));
 
-      await fetch(`${this.config.baseURL}/v1/ingestion/events`, {
+      const body = JSON.stringify({
+        events: finalEvents,
+      });
+
+      const sessionId = this.session?.id;
+
+      const response = await fetch(`${this.config.baseURL}/v1/ingestion/events`, {
+        keepalive: fitsKeepalive(body),
         ...this.config.requestConfig,
         ...config,
         method: 'POST',
@@ -166,10 +176,13 @@ export class Bigdelta {
           'x-tracking-key': this.config.trackingKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          events: finalEvents,
-        }),
+        body,
+      }).catch((error) => {
+        this.updateUnsentInitialSessionProperties(sessionId, initialSessionProperties, false);
+        throw error;
       });
+
+      this.updateUnsentInitialSessionProperties(sessionId, initialSessionProperties, response?.ok === true);
 
       if (!this.initialPresenceSent) {
         this.initialPresenceSent = await this.updatePresence();
@@ -489,11 +502,29 @@ export class Bigdelta {
       const lastEvent = eligibleEvents[eligibleEvents.length - 1];
 
       return [
-        sessionInfo.isNew ? initialSessionProperties(firstEvent) : {},
+        sessionInfo.isNew ? initialSessionProperties(firstEvent) : this.getUnsentInitialSessionProperties(),
         sessionProperties(this.session, lastEvent),
       ];
     }
     return [{}, {}];
+  }
+
+  private updateUnsentInitialSessionProperties(
+    sessionId: string,
+    initialSessionProperties: Record<string, any>,
+    isDelivered: boolean,
+  ) {
+    if (Object.keys(initialSessionProperties).length === 0) {
+      return;
+    }
+
+    this.unsentInitialSessionProperties = isDelivered ? null : { sessionId, properties: initialSessionProperties };
+  }
+
+  private getUnsentInitialSessionProperties(): Record<string, any> {
+    return this.unsentInitialSessionProperties?.sessionId === this.session?.id
+      ? this.unsentInitialSessionProperties.properties
+      : {};
   }
 
   private async trackWithPageContext(pageContext: PageContext, payload?: PageViewEventPayload) {

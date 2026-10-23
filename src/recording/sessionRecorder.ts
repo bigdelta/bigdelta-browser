@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { DateTime } from 'luxon';
 import { SessionRecorderOptions } from '../model/sessionRecording';
 import { getWindowId } from '../utils/windowId';
+import { fitsKeepalive } from '../utils/keepalive';
 
 const DEFAULT_FLUSH_INTERVAL_MS = 15000;
 const MIN_FLUSH_INTERVAL_MS = 5000;
@@ -15,8 +16,6 @@ const MAX_MAX_RECORDING_DURATION_MS = 2 * 60 * 60 * 1000;
 
 const MAX_CHUNK_EVENTS = 200;
 const MAX_CHUNK_SIZE_BYTES = 512 * 1024;
-
-const KEEPALIVE_MAX_BYTES = 64 * 1024;
 
 const MASK_TEXT_CLASS = 'bigdelta-mask';
 const BLOCK_CLASS = 'bigdelta-block';
@@ -246,7 +245,7 @@ export class SessionRecorder {
 
   private upload(body: string, keepalive: boolean): void {
     if (keepalive || typeof CompressionStream === 'undefined') {
-      this.send(body, keepalive && new Blob([body]).size <= KEEPALIVE_MAX_BYTES);
+      this.send(body, keepalive && fitsKeepalive(body));
 
       return;
     }
