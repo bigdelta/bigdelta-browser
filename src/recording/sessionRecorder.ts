@@ -1,4 +1,4 @@
-import { record } from 'rrweb';
+import { EventType, record } from 'rrweb';
 import type { eventWithTime } from '@rrweb/types';
 import { v4 as uuid } from 'uuid';
 import { DateTime } from 'luxon';
@@ -109,6 +109,10 @@ export class SessionRecorder {
     window.addEventListener('pagehide', this.handlePageHide);
 
     this.emitPageContext();
+
+    if (this.buffer.some((event) => event.type === EventType.FullSnapshot) && this.hasSession()) {
+      this.flush();
+    }
   }
 
   public stop(): void {
@@ -146,10 +150,15 @@ export class SessionRecorder {
 
     const reachedEventLimit = this.buffer.length >= MAX_CHUNK_EVENTS;
     const reachedSizeLimit = this.bufferSizeBytes >= MAX_CHUNK_SIZE_BYTES;
+    const isUploadableFullSnapshot = event.type === EventType.FullSnapshot && !!this.stopRecording && this.hasSession();
 
-    if (reachedEventLimit || reachedSizeLimit) {
+    if (reachedEventLimit || reachedSizeLimit || isUploadableFullSnapshot) {
       void this.flush();
     }
+  }
+
+  private hasSession(): boolean {
+    return !!this.config.getSessionId();
   }
 
   private maskText(text: string, element: HTMLElement | null): string {
