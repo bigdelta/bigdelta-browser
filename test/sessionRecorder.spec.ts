@@ -3,6 +3,7 @@ import { record } from 'rrweb';
 import { PAGE_CONTEXT_TAG, SessionRecorder } from '../src/recording/sessionRecorder';
 
 jest.mock('rrweb', () => ({
+  EventType: jest.requireActual('@rrweb/types').EventType,
   record: Object.assign(jest.fn(), { addCustomEvent: jest.fn() }),
 }));
 
@@ -361,5 +362,86 @@ describe('SessionRecorder', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(request.headers['Content-Encoding']).toBeUndefined();
     expect(JSON.parse(request.body).events).toHaveLength(2);
+  });
+
+  describe('full snapshot', () => {
+    const META = 4;
+    const FULL_SNAPSHOT = 2;
+    const CUSTOM = 5;
+    const INCREMENTAL = 3;
+
+    const requestEventTypes = () =>
+      (global.fetch as jest.Mock).mock.calls.map(([, init]) =>
+        JSON.parse(init.body).events.map((event: RecordedEvent) => event.type),
+      );
+
+    it('uploads the snapshot taken on start straight away with the page context', () => {
+      recordMock.mockImplementation((options: { emit: (event: eventWithTime) => void }) => {
+        emit = options.emit;
+        emit({ type: META, data: {}, timestamp: 1000 } as unknown as eventWithTime);
+        emit({ type: FULL_SNAPSHOT, data: {}, timestamp: 1001 } as unknown as eventWithTime);
+
+        return jest.fn();
+      });
+
+      const recorder = buildRecorder({ flushIntervalMs: 15000 });
+      recorder.start();
+
+      expect(requestEventTypes()).toEqual([[META, FULL_SNAPSHOT, CUSTOM]]);
+      expect((global.fetch as jest.Mock).mock.calls[0][1].keepalive).toEqual(false);
+    });
+
+    it('uploads a snapshot taken after the page loads straight away', () => {
+      const recorder = buildRecorder({ flushIntervalMs: 15000 });
+      recorder.start();
+
+      emit({ type: META, data: {}, timestamp: 1000 } as unknown as eventWithTime);
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      emit({ type: FULL_SNAPSHOT, data: {}, timestamp: 1001 } as unknown as eventWithTime);
+
+      expect(requestEventTypes()).toEqual([[CUSTOM, META, FULL_SNAPSHOT]]);
+    });
+
+    it('keeps batching the events that follow the snapshot on the flush interval', () => {
+      const recorder = buildRecorder({ flushIntervalMs: 15000 });
+      recorder.start();
+
+      emit({ type: FULL_SNAPSHOT, data: {}, timestamp: 1000 } as unknown as eventWithTime);
+      emit(buildEvent(2000));
+      emit(buildEvent(3000));
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      jest.advanceTimersByTime(15000);
+
+      expect(requestEventTypes()).toEqual([
+        [CUSTOM, FULL_SNAPSHOT],
+        [CUSTOM, INCREMENTAL, INCREMENTAL],
+      ]);
+    });
+
+    it('waits for the flush interval when there is no session yet to attach the snapshot to', () => {
+      const recorder = buildRecorder({ flushIntervalMs: 15000, getSessionId: () => undefined });
+      recorder.start();
+
+      emit({ type: FULL_SNAPSHOT, data: {}, timestamp: 1000 } as unknown as eventWithTime);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      jest.advanceTimersByTime(15000);
+
+      expect(requestEventTypes()).toEqual([[CUSTOM, FULL_SNAPSHOT]]);
+    });
+
+    it('does not upload a page without a snapshot before the flush interval', () => {
+      const recorder = buildRecorder({ flushIntervalMs: 15000 });
+      recorder.start();
+
+      emit(buildEvent(1000));
+      emit({ type: META, data: {}, timestamp: 2000 } as unknown as eventWithTime);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
   });
 });
