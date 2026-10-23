@@ -55,6 +55,7 @@ describe('Bigdelta', () => {
 
       expect(anonymousId).toBeDefined();
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -208,6 +209,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -242,6 +244,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -280,6 +283,7 @@ describe('Bigdelta', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -373,6 +377,7 @@ describe('Bigdelta', () => {
       await client.trackPageView();
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -426,6 +431,7 @@ describe('Bigdelta', () => {
       await client.trackPageView({ event_name: 'Custom Page View', properties: { my_prop: 'prop_value' } });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -483,6 +489,7 @@ describe('Bigdelta', () => {
       await client.trackPageView();
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -527,6 +534,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Page Viewed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -598,6 +606,7 @@ describe('Bigdelta', () => {
       });
 
       expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -667,6 +676,7 @@ describe('Bigdelta', () => {
       });
 
       expect(global.fetch).toHaveBeenNthCalledWith(3, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -704,6 +714,7 @@ describe('Bigdelta', () => {
       });
 
       expect(global.fetch).toHaveBeenNthCalledWith(4, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -742,6 +753,7 @@ describe('Bigdelta', () => {
       });
 
       expect(global.fetch).toHaveBeenNthCalledWith(5, 'https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -790,6 +802,152 @@ describe('Bigdelta', () => {
           'x-tracking-key': 'key',
         },
         method: 'POST',
+      });
+    });
+
+    describe('event delivery', () => {
+      const eventCalls = () =>
+        (global.fetch as jest.Mock).mock.calls.filter(([url]) => url.endsWith('/v1/ingestion/events'));
+
+      const sentSessionInitialProperties = () =>
+        eventCalls().map(
+          ([, init]) =>
+            JSON.parse(init.body).events[0].relations.find(
+              (relation: { object_slug: string }) => relation.object_slug === 'sessions',
+            ).set_once,
+        );
+
+      const failEventsRequests = (...results: ('reject' | 'not ok' | 'ok')[]) =>
+        (global.fetch as jest.Mock).mockImplementation(async (url: string) => {
+          const result = url.endsWith('/v1/ingestion/events') ? results[eventCalls().length - 1] : 'ok';
+
+          if (result === 'reject') {
+            throw new TypeError('Failed to fetch');
+          }
+
+          return { ok: result !== 'not ok', json: async () => ({}) };
+        });
+
+      const expectedInitialSessionProperties = {
+        $start_event: 'Page View',
+        $start_location: 'https://domain.com/path/index.html?foo=bar&utm_campaign=campaign&gclid=id',
+        $start_path: '/path/index.html',
+        $initial_utm_campaign: 'campaign',
+        $initial_referring_domain: 'www.google.com',
+        $initial_gclid: 'id',
+        $channel_type: 'Paid Search',
+      };
+
+      it('should send events with keepalive only while the body fits the keepalive limit', async () => {
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: false } } });
+
+        await client.track({ event_name: 'Small Event' });
+        await client.track({ event_name: 'Large Event', properties: { payload: 'x'.repeat(64 * 1024) } });
+
+        expect(eventCalls().map(([, init]) => init.keepalive)).toEqual([true, false]);
+      });
+
+      it('should let request config override keepalive', async () => {
+        const client = new Bigdelta({
+          trackingKey: 'key',
+          requestConfig: { keepalive: false },
+          defaultTrackingConfig: { sessions: { enabled: false } },
+        });
+
+        await client.track({ event_name: 'Small Event' });
+
+        expect(eventCalls()[0][1].keepalive).toBe(false);
+      });
+
+      it('should not resend initial session properties once they were delivered', async () => {
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: true } } });
+
+        await client.trackPageView();
+        await client.track({ event_name: 'Second Event' });
+
+        expect(sentSessionInitialProperties()).toEqual([expectedInitialSessionProperties, {}]);
+      });
+
+      it('should resend initial session properties after the request carrying them failed', async () => {
+        failEventsRequests('reject', 'ok', 'ok');
+
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: true } } });
+
+        await client.trackPageView();
+        await client.track({ event_name: 'Second Event' });
+        await client.track({ event_name: 'Third Event' });
+
+        expect(sentSessionInitialProperties()).toEqual([
+          expectedInitialSessionProperties,
+          expectedInitialSessionProperties,
+          {},
+        ]);
+      });
+
+      it('should resend initial session properties after an unsuccessful response', async () => {
+        failEventsRequests('not ok', 'not ok', 'ok', 'ok');
+
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: true } } });
+
+        await client.trackPageView();
+        await client.track({ event_name: 'Second Event' });
+        await client.track({ event_name: 'Third Event' });
+        await client.track({ event_name: 'Fourth Event' });
+
+        expect(sentSessionInitialProperties()).toEqual([
+          expectedInitialSessionProperties,
+          expectedInitialSessionProperties,
+          expectedInitialSessionProperties,
+          {},
+        ]);
+      });
+
+      it('should not resend initial session properties while the request carrying them is in flight', async () => {
+        (global.fetch as jest.Mock).mockImplementationOnce(
+          () => new Promise((_, reject) => setTimeout(() => reject(new TypeError('Failed to fetch')), 0)),
+        );
+
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: true } } });
+
+        const firstTrack = client.trackPageView();
+
+        await client.track({ event_name: 'Second Event' });
+        await firstTrack;
+
+        await client.track({ event_name: 'Third Event' });
+
+        expect(sentSessionInitialProperties()).toEqual([
+          expectedInitialSessionProperties,
+          {},
+          expectedInitialSessionProperties,
+        ]);
+      });
+
+      it('should not resend initial properties of a previous session', async () => {
+        failEventsRequests('reject', 'ok');
+
+        const client = new Bigdelta({ trackingKey: 'key', defaultTrackingConfig: { sessions: { enabled: true } } });
+
+        const now = DateTime.utc(2024, 1, 1, 0, 0, 0);
+
+        Settings.now = () => now.toMillis();
+        await client.trackPageView();
+
+        const firstSessionId = client.getSessionId();
+
+        Settings.now = () => now.plus({ minutes: 31 }).toMillis();
+        await client.track({ event_name: 'Next Session Event' });
+
+        expect(client.getSessionId()).not.toEqual(firstSessionId);
+        expect(sentSessionInitialProperties()[1]).toEqual({
+          ...expectedInitialSessionProperties,
+          $start_event: 'Next Session Event',
+          $start_location: undefined,
+          $start_path: undefined,
+          $initial_utm_campaign: undefined,
+          $initial_gclid: undefined,
+          $channel_type: 'Organic Search',
+        });
       });
     });
 
@@ -953,6 +1111,7 @@ describe('Bigdelta', () => {
       };
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -1008,6 +1167,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Order Completed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
@@ -1046,6 +1206,7 @@ describe('Bigdelta', () => {
       await client.track({ event_name: 'Order Completed' });
 
       expect(global.fetch).toHaveBeenCalledWith('https://eu.api.bigdelta.com/v1/ingestion/events', {
+        keepalive: true,
         body: JSON.stringify({
           events: [
             {
